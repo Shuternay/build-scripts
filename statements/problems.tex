@@ -1,0 +1,56 @@
+\documentclass[11pt,a4paper,oneside]{article}
+
+\usepackage[english,russian]{babel}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{olymp}
+\usepackage{graphicx}
+\usepackage{expdlist}
+\usepackage{mfpic}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{comment}
+\usepackage{listings}
+\usepackage{epigraph}
+\usepackage{url}
+
+\DeclareMathOperator{\nott}{not}
+
+\begin{document}
+
+\renewcommand{\t}[1]{\mbox{\texttt{#1}}}
+\newcommand{\s}[1]{\mbox{``\t{#1}''}}
+\newcommand{\eps}{\varepsilon}
+\renewcommand{\phi}{\varphi}
+\newcommand{\plainhat}{{\char 94}}
+
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\w}[1]{``\t{#1}''}
+
+
+\binoppenalty=10000
+\relpenalty=10000
+
+\createsection{\Note}{Пояснение}
+
+\contest{V-я Открытая олимпиада ИМИТ ОмГУ по программированию}{Омск}{15.01.14 - 05.02.14}
+
+\newcommand{\statement}[1]{
+\protect\graphicspath{{../problems/#1/statement/}}
+\protect\input ../problems/#1/statement/#1.tex
+}
+
+% uncomment when statement is ready
+\statement{pizza}
+\statement{present}
+\statement{lego}
+\statement{bits}
+\statement{archiver}
+\statement{matrix}
+\statement{perfectionism}
+\statement{rabbits}
+\statement{circles-on-water}
+\statement{dict}
+
+
+\end{document}
