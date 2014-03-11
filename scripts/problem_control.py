@@ -17,6 +17,7 @@ from misc import write_log
 
 __author__ = 'ksg'
 TL = 3.0
+DEFAULT_TEST_NUM_WIDTH = 2
 
 
 class Test:
@@ -27,6 +28,8 @@ class Test:
         self.test_cnt = 0
         if not os.path.exists(folder):
             raise Exception('Folder with tests does not exists')
+        name_width = cfg.get_problem_param('test_num_width') or str(DEFAULT_TEST_NUM_WIDTH)
+        self.str_format = '{:0>' + name_width + 'd}'  # '{:0>2d}'
 
     def __iter__(self):
         self.test_cnt = 0
@@ -34,14 +37,14 @@ class Test:
 
     def __next__(self):
         self.test_cnt += 1
-        if not os.path.exists(os.path.join(self.folder, '{:0>2d}'.format(self.test_cnt))):
+        if not os.path.exists(os.path.join(self.folder, self.str_format.format(self.test_cnt))):
             raise StopIteration
 
         return self
 
     def __len__(self):
         len = 1
-        while os.path.exists(os.path.join(self.folder, '{:0>2d}'.format(len))):
+        while os.path.exists(os.path.join(self.folder, self.str_format.format(len))):
             len += 1
         return len - 1
 
@@ -49,16 +52,16 @@ class Test:
         return self.test_cnt
 
     def inf_path(self):
-        return os.path.join(self.folder, "{:0>2d}".format(self.test_cnt))
+        return os.path.join(self.folder, self.str_format.format(self.test_cnt))
 
     def ans_path(self):
-        return os.path.join(self.folder, "{:0>2d}.a".format(self.test_cnt))
+        return os.path.join(self.folder, (self.str_format + '.a').format(self.test_cnt))
 
     def inf_name(self):
-        return "{:0>2d}".format(self.test_cnt)
+        return self.str_format.format(self.test_cnt)
 
     def ans_name(self):
-        return "{:0>2d}.a".format(self.test_cnt)
+        return (self.str_format + '.a').format(self.test_cnt)
 
     def open_inf(self, mode='r'):
         return open(self.inf_path(), mode)
@@ -80,7 +83,7 @@ def validate_tests(args=None):
     ok_count = 0
 
     for t in Test('tests'):
-        write_log('test {:0>2d}: '.format(t.test_num()), end='', file=log_file_name)
+        write_log(('test ' + t.str_format + ': ').format(t.test_num()), end='', file=log_file_name)
 
         with t.open_inf() as inf:
             process = subprocess.Popen(validator_ex, stdin=inf, stderr=subprocess.PIPE)
@@ -126,7 +129,7 @@ def build_tests(args):
     write_log('\nGenerating answers...', file=log_file_name)
 
     for t in Test('tests'):
-        write_log('test {:0>2d}: '.format(t.test_num()), end="", file=log_file_name)
+        write_log(('test ' + t.str_format + ': ').format(t.test_num()), end="", file=log_file_name)
 
         with t.open_inf('r') as inf, t.open_ans('w') as ans:
             res = subprocess.call(
@@ -154,7 +157,7 @@ def check_solution(args):
 
     ok_count = 0
     for t in Test('tests'):
-        write_log('test {:0>2d}: '.format(t.test_num()), end='', file=log_file_name)
+        write_log(('test ' + t.str_format + ': ').format(t.test_num()), end='', file=log_file_name)
 
         try:
             with t.open_inf('r') as inf, open('tmp/problem.out', 'w') as ouf:
@@ -227,7 +230,7 @@ def stress_test(args):
 
     while cur_test < n or n == -1:
         cur_test += 1
-        write_log('{:0>3d}: '.format(cur_test), end='', file=log_file_name)
+        write_log('{:0>4d}: '.format(cur_test), end='', file=log_file_name)
 
         for suf in ['in', 'out', 'ans']:
             if os.path.exists('tmp/problem.' + suf):
