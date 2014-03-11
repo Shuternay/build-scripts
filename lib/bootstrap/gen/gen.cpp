@@ -42,13 +42,13 @@ public:
 
     TestCase() {
     }
+    TestCase(long n): n(n) {
+    }
 
-    long n, m;
-    vector<string> dict;
-    string s;
+    long n;
 
     TestCase *process() {
-        printTestInfo("shuffled string");
+        printTestInfo("processed test");
 
         return this;
     }
@@ -72,10 +72,7 @@ public:
                 break;
         }
 
-        fprintf(inf, "%ld\n", m);
-        for (long i = 0; i < m; ++i)
-            fprintf(inf, "%s\n", dict[i].c_str());
-        fprintf(inf, "%s\n", s.c_str());
+        fprintf(inf, "%ld\n", n);
 
     }
 };
@@ -83,15 +80,11 @@ public:
 TestCase genHandTest(int n) {
     TestCase t;
 
-
-
     return t;
 }
 
 TestCase genRandomTest(long n, long m = -1) {
     TestCase t;
-
-
 
     return t;
 }
@@ -100,29 +93,37 @@ int main(int argc, char** argv) {
 
     registerGen(argc, argv, 1);
 
+    long long maxn = 1e5; // problem maximum
+
     int outF = argc > 1 ? atoi(argv[1]) : SINGLE;
     switch (outF) {
         case NORMAL:
         case TESTLIB:
-            *genHandTest(0)->printTest(outF);
-            *genHandTest(1)->printTest(outF);
+            genHandTest(0).printTest(outF);
+            genHandTest(1).printTest(outF);
 
 
-            printTestInfo("group 1");
-            *genRandomTest(1000)->process()->printTest(outF);
+            maxn = 1000;
+            printTestInfo("");
+            printTestInfo("group 1, maxn = %ld", maxn);
+            genRandomTest(maxn).printTest(outF);
 
 
-            printTestInfo("group 2");
-            *genRandomTest(1000)->process()->printTest(outF);
+            maxn = 1000;
+            printTestInfo("");
+            printTestInfo("group 2, maxn = %ld", maxn);
+            genRandomTest(maxn).printTest(outF);
 
 
-            printTestInfo("group 3");
-            *genRandomTest(1000)->process()->printTest(outF);
+            maxn = 1000;
+            printTestInfo("");
+            printTestInfo("group 3, maxn = %ld", maxn);
+            genRandomTest(maxn).printTest(outF);
 
             break;
 
         case SINGLE:
-            *genRandomTest(1000)->printTest(outF);
+            genRandomTest(maxn).printTest(outF);
             break;
     }
 
