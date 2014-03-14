@@ -1,3 +1,5 @@
+% 08.11.2013
+% https://github.com/GassaFM/olymp.sty/blob/master/statements/olymp.sty
 %
 % Macros for the contest problems
 % for MikTeX: use latex.exe
@@ -605,14 +607,14 @@
 % Revision signature
 \ifrevisionsignature%
 %\if@revsign%
-        {\gdef\rsigfooter{, \kw@revision\ \therevision}}%
+	{\gdef\rsigfooter{, \kw@revision\ \therevision}}%
 \else%
-        {\gdef\rsigfooter{}}%
+	{\gdef\rsigfooter{}}%
 \fi%
 
 \ifdisplayauthorinfooter%
 %\if@newfooter%
-        {\gdef\thefooter%
+	{\gdef\thefooter%
         {~\quad{\kw@Problem\ \problemletter}%
         {\hfill}%
         {\kw@ProblemAuthor~\lastproblemauthor}%
@@ -620,14 +622,14 @@
         {\kw@Page\ \thepage\ \kw@of\ \pageref{LastPage}\rsigfooter}\quad~}}%
 \else%
 \ifdisplaydeveloperinfooter%
-        {\gdef\thefooter%
+	{\gdef\thefooter%
         {~\quad{\kw@Problem\ \problemletter}%
         {\hfill}%
         {\kw@ProblemDeveloper~\lastproblemdeveloper}%
         {\hfill}%
         {\kw@Page\ \thepage\ \kw@of\ \pageref{LastPage}\rsigfooter}\quad~}}%
 \else%
-        {\gdef\thefooter%
+	{\gdef\thefooter%
         {{\hfil}\kw@Page\ \thepage\ \kw@of\ \pageref{LastPage}\rsigfooter\hfil}}%
 \fi%
 \fi%
