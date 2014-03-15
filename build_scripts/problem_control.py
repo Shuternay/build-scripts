@@ -2,6 +2,7 @@
 import argparse
 import datetime
 import os
+import pkgutil
 import random
 import shutil
 import subprocess
@@ -18,6 +19,7 @@ from build_scripts.misc import write_log
 __author__ = 'ksg'
 TL = 3.0
 DEFAULT_TEST_NUM_WIDTH = 2
+
 
 class Test:
     """iterator that returns tests in specified folder"""
@@ -363,39 +365,39 @@ def add(args):
     contest_root = misc.get_contest_root()
     problem_name = args['name']
     problem_path = os.path.join(contest_root, 'problems', problem_name)
-    bootstrap_path = os.path.join(contest_root, 'lib/bootstrap')  # FIXME
 
     os.mkdir(problem_path)
 
     os.mkdir(os.path.join(problem_path, 'check'))
-    shutil.copy(os.path.join(bootstrap_path, 'check.cpp'), os.path.join(problem_path, 'check/check.cpp'))
+    with open(os.path.join(problem_path, 'check/check.cpp'), 'w') as f:
+        data = str(pkgutil.get_data('build_scripts', 'data/bootstrap/check.cpp'), 'utf-8')
+        f.write(data)
 
-    shutil.copytree(os.path.join(bootstrap_path, 'gen'), os.path.join(problem_path, 'gen'))
+    os.mkdir(os.path.join(problem_path, 'gen'))
+    with open(os.path.join(problem_path, 'gen/gen.cpp'), 'w') as f:
+        data = str(pkgutil.get_data('build_scripts', 'data/bootstrap/gen.cpp'), 'utf-8')
+        f.write(data)
 
-    shutil.copytree(os.path.join(bootstrap_path, 'validator'), os.path.join(problem_path, 'validator'))
+    os.mkdir(os.path.join(problem_path, 'validator'))
+    with open(os.path.join(problem_path, 'validator/validator.cpp'), 'w') as f:
+        data = str(pkgutil.get_data('build_scripts', 'data/bootstrap/validator.cpp'), 'utf-8')
+        f.write(data)
 
     os.mkdir(os.path.join(problem_path, 'solutions'))
     os.mkdir(os.path.join(problem_path, 'solutions', 'WIP'))
-    shutil.copytree(os.path.join(bootstrap_path, 'sol'),
-                    os.path.join(problem_path, 'solutions/WIP/' + problem_name + '_ksg'))
-    shutil.move(os.path.join(problem_path, 'solutions/WIP/' + problem_name + '_ksg/sol.cpp'),
-                os.path.join(problem_path, 'solutions/WIP/{0}_ksg/{0}_ksg.cpp'.format(problem_name)))
+    with open(os.path.join(problem_path, 'solutions/WIP/{0}_ksg.cpp'.format(problem_name)), 'w') as f:
+        data = str(pkgutil.get_data('build_scripts', 'data/bootstrap/sol.cpp'), 'utf-8')
+        f.write(data)
 
     os.mkdir(os.path.join(problem_path, 'statement'))
-    shutil.copy(os.path.join(bootstrap_path, 'st.tex'),
-                os.path.join(problem_path, 'statement/' + problem_name + '.tex'))
+    with open(os.path.join(problem_path, 'statement/' + problem_name + '.tex'), 'w') as f:
+        data = str(pkgutil.get_data('build_scripts', 'data/bootstrap/st.tex'), 'utf-8')
+        f.write(data)
 
     with open(os.path.join(problem_path, 'problem.conf'), 'w') as f:
-        f.write('''\
-[general]
-title = ???
-short name = {0}
-system name = {0}
-main solution = main_ksg_solution
-
-[main_ksg_solution]
-is main = true
-path = solutions/{0}_ksg.cpp'''.format(problem_name))
+        data = str(pkgutil.get_data('build_scripts', 'data/bootstrap/problem.conf'), 'utf-8')
+        data = data.format(problem_name)
+        f.write(data)
 
 
 def update_scripts(args):
