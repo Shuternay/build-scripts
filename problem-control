@@ -1,0 +1,4 @@
+#!/usr/bin/python3.3
+import build_scripts.problem_control
+
+build_scripts.problem_control.main()

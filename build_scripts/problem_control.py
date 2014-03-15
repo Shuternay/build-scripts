@@ -10,15 +10,14 @@ import netrc
 import time
 import sys
 
-import tex2xml
-import misc
-from misc import write_log
+from build_scripts import tex2xml
+from build_scripts import misc
+from build_scripts.misc import write_log
 
 
 __author__ = 'ksg'
 TL = 3.0
 DEFAULT_TEST_NUM_WIDTH = 2
-
 
 class Test:
     """iterator that returns tests in specified folder"""
@@ -364,7 +363,7 @@ def add(args):
     contest_root = misc.get_contest_root()
     problem_name = args['name']
     problem_path = os.path.join(contest_root, 'problems', problem_name)
-    bootstrap_path = os.path.join(contest_root, 'lib/bootstrap')
+    bootstrap_path = os.path.join(contest_root, 'lib/bootstrap')  # FIXME
 
     os.mkdir(problem_path)
 
@@ -412,57 +411,63 @@ def update_scripts(args):
     shutil.copytree(src_folder, dst_folder)
 
 
-cfg = misc.Config()
+def main():
+    global cfg
+    cfg = misc.Config()
 
-parser = argparse.ArgumentParser()
-subparsers = parser.add_subparsers(help='sub-command help')
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(help='sub-command help')
 
-parser_build = subparsers.add_parser('build', help='build tests and gen answers')
-parser_build.add_argument('main_solution', nargs='?', help='model solution for answers')
-parser_build.set_defaults(func=build_tests)
+    parser_build = subparsers.add_parser('build', help='build tests and gen answers')
+    parser_build.add_argument('main_solution', nargs='?', help='model solution for answers')
+    parser_build.set_defaults(func=build_tests)
 
-parser_check = subparsers.add_parser('check', help='Check solution on tests')
-parser_check.add_argument('solution', nargs='?', help='path to solution for check')
-parser_check.set_defaults(func=check_solution)
+    parser_check = subparsers.add_parser('check', help='Check solution on tests')
+    parser_check.add_argument('solution', nargs='?', help='path to solution for check')
+    parser_check.set_defaults(func=check_solution)
 
-parser_check_all = subparsers.add_parser('check_all', help='check all solutions')
-parser_check_all.set_defaults(func=check_all_solutions)
+    parser_check_all = subparsers.add_parser('check_all', help='check all solutions')
+    parser_check_all.set_defaults(func=check_all_solutions)
 
-parser_validate = subparsers.add_parser('validate', help='validate tests')
-parser_validate.set_defaults(func=validate_tests)
+    parser_validate = subparsers.add_parser('validate', help='validate tests')
+    parser_validate.set_defaults(func=validate_tests)
 
-parser_stress = subparsers.add_parser('stress', help='stress testing')
-parser_stress.add_argument('solution', help='path to solution for check')
-parser_stress.add_argument('model_solution', nargs='?', help='model solution for answers')
-parser_stress.add_argument('-n', '--num', type=int, help='number of tests')
-parser_stress.add_argument('--MTL', type=float, help='Time limit for model solution')
-parser_stress.add_argument('--TL', type=float, help='Time limit for user solution')
-parser_stress.set_defaults(func=stress_test)
+    parser_stress = subparsers.add_parser('stress', help='stress testing')
+    parser_stress.add_argument('solution', help='path to solution for check')
+    parser_stress.add_argument('model_solution', nargs='?', help='model solution for answers')
+    parser_stress.add_argument('-n', '--num', type=int, help='number of tests')
+    parser_stress.add_argument('--MTL', type=float, help='Time limit for model solution')
+    parser_stress.add_argument('--TL', type=float, help='Time limit for user solution')
+    parser_stress.set_defaults(func=stress_test)
 
-parser_build_st = subparsers.add_parser('build_st', help='build statement.xml from .tex statement')
-parser_build_st.set_defaults(func=build_st)
+    parser_build_st = subparsers.add_parser('build_st', help='build statement.xml from .tex statement')
+    parser_build_st.set_defaults(func=build_st)
 
-parser_upload = subparsers.add_parser('upload', help='upload data on contest server')
-parser_upload.add_argument('-t', '--tests', action='store_true', help='upload tests')
-parser_upload.add_argument('-c', '--checker', action='store_true', help='upload checker sources')
-parser_upload.add_argument('-v', '--validator', action='store_true', help='upload validator sources')
-parser_upload.add_argument('-l', '--testlib', action='store_true', help='upload testlib.h')
-parser_upload.add_argument('-s', '--statement', action='store_true', help='upload statement.xml')
-parser_upload.add_argument('-g', '--gvaluer', action='store_true', help='upload valuer.cfg')
-parser_upload.set_defaults(func=upload)
+    parser_upload = subparsers.add_parser('upload', help='upload data on contest server')
+    parser_upload.add_argument('-t', '--tests', action='store_true', help='upload tests')
+    parser_upload.add_argument('-c', '--checker', action='store_true', help='upload checker sources')
+    parser_upload.add_argument('-v', '--validator', action='store_true', help='upload validator sources')
+    parser_upload.add_argument('-l', '--testlib', action='store_true', help='upload testlib.h')
+    parser_upload.add_argument('-s', '--statement', action='store_true', help='upload statement.xml')
+    parser_upload.add_argument('-g', '--gvaluer', action='store_true', help='upload valuer.cfg')
+    parser_upload.set_defaults(func=upload)
 
-parser_clean = subparsers.add_parser('clean', help='clean')
-parser_clean.set_defaults(func=clean)
+    parser_clean = subparsers.add_parser('clean', help='clean')
+    parser_clean.set_defaults(func=clean)
 
-parser_add = subparsers.add_parser('add', help='add problem')
-parser_add.add_argument('name', help='problem name')
-parser_add.set_defaults(func=add)
+    parser_add = subparsers.add_parser('add', help='add problem')
+    parser_add.add_argument('name', help='problem name')
+    parser_add.set_defaults(func=add)
 
-parser_update = subparsers.add_parser('update', help='update scripts in current contest directory')
-parser_update.set_defaults(func=update_scripts)
+    parser_update = subparsers.add_parser('update', help='update scripts in current contest directory')
+    parser_update.set_defaults(func=update_scripts)
 
-in_args = parser.parse_args()
-if in_args.__contains__('func'):
-    in_args.func(vars(in_args))
-else:
-    parser.print_help()
+    in_args = parser.parse_args()
+    if in_args.__contains__('func'):
+        in_args.func(vars(in_args))
+    else:
+        parser.print_help()
+
+
+if __name__ == '__main__':
+    main()
