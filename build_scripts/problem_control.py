@@ -420,20 +420,25 @@ def main():
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(help='sub-command help')
 
+    # (build) build tests
     parser_build = subparsers.add_parser('build', help='build tests and gen answers')
     parser_build.add_argument('main_solution', nargs='?', help='model solution for answers')
     parser_build.set_defaults(func=build_tests)
 
+    # (check) check solution
     parser_check = subparsers.add_parser('check', help='Check solution on tests')
     parser_check.add_argument('solution', nargs='?', help='path to solution for check')
     parser_check.set_defaults(func=check_solution)
 
+    # (check_all) check all solutions
     parser_check_all = subparsers.add_parser('check_all', help='check all solutions')
     parser_check_all.set_defaults(func=check_all_solutions)
 
+    # (validate )validate tests
     parser_validate = subparsers.add_parser('validate', help='validate tests')
     parser_validate.set_defaults(func=validate_tests)
 
+    # (stress) stress testing of solution
     parser_stress = subparsers.add_parser('stress', help='stress testing')
     parser_stress.add_argument('solution', help='path to solution for check')
     parser_stress.add_argument('model_solution', nargs='?', help='model solution for answers')
@@ -442,9 +447,11 @@ def main():
     parser_stress.add_argument('--TL', type=float, help='Time limit for user solution')
     parser_stress.set_defaults(func=stress_test)
 
+    # (build_st) build statement.xml
     parser_build_st = subparsers.add_parser('build_st', help='build statement.xml from .tex statement')
     parser_build_st.set_defaults(func=build_st)
 
+    # (upload) upload files to server
     parser_upload = subparsers.add_parser('upload', help='upload data on contest server')
     parser_upload.add_argument('-t', '--tests', action='store_true', help='upload tests')
     parser_upload.add_argument('-c', '--checker', action='store_true', help='upload checker sources')
@@ -454,13 +461,16 @@ def main():
     parser_upload.add_argument('-g', '--gvaluer', action='store_true', help='upload valuer.cfg')
     parser_upload.set_defaults(func=upload)
 
+    # (clean) clean tmp files
     parser_clean = subparsers.add_parser('clean', help='clean')
     parser_clean.set_defaults(func=clean)
 
+    # (add) add new problem
     parser_add = subparsers.add_parser('add', help='add problem')
     parser_add.add_argument('name', help='problem name')
     parser_add.set_defaults(func=add)
 
+    # (update) update scripts
     parser_update = subparsers.add_parser('update', help='update scripts in current contest directory')
     parser_update.set_defaults(func=update_scripts)
 
