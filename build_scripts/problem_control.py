@@ -400,6 +400,29 @@ def add(args):
         f.write(data)
 
 
+def add_contest(args):
+    name = args['name']
+    if os.path.exists(name):
+        raise ValueError('folder with the same name ({0}) exists'.format(name))
+
+    os.mkdir(name)
+    os.mkdir(os.path.join(name, 'statements'))
+    os.mkdir(os.path.join(name, 'problems'))
+    os.mkdir(os.path.join(name, 'lib'))
+
+    with open(os.path.join(name, 'statements', 'problems.tex'), 'w') as f:
+        data = str(pkgutil.get_data('build_scripts', 'data/bootstrap/problems.tex'), 'utf-8')
+        f.write(data)
+
+    with open(os.path.join(name, 'statements', 'olymp.sty'), 'w') as f:
+        data = str(pkgutil.get_data('build_scripts', 'data/bootstrap/olymp.sty'), 'utf-8')
+        f.write(data)
+
+    with open(os.path.join(name, 'lib', 'testlib.h'), 'w') as f:
+        data = str(pkgutil.get_data('build_scripts', 'data/testlib.h'), 'utf-8')
+        f.write(data)
+
+
 def update_scripts(args):
     dst_folder = os.path.join(misc.get_contest_root(), 'scripts')
     src_folder = os.path.dirname(sys.argv[0])
@@ -469,6 +492,11 @@ def main():
     parser_add = subparsers.add_parser('add', help='add problem')
     parser_add.add_argument('name', help='problem name')
     parser_add.set_defaults(func=add)
+
+    # (add_contest) add new contest
+    parser_add_contest = subparsers.add_parser('add_contest', help='create new contest')
+    parser_add_contest.add_argument('name', help='contest name')
+    parser_add_contest.set_defaults(func=add_contest)
 
     # (update) update scripts
     parser_update = subparsers.add_parser('update', help='update scripts in current contest directory')
