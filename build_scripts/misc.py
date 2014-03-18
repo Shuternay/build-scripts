@@ -5,6 +5,8 @@ import os
 
 __author__ = 'ksg'
 
+pjoin = os.path.join
+
 
 def compile_file(file: str, target='', use_testlib=False, flags=''):
     # TODO java compilation
@@ -15,7 +17,7 @@ def compile_file(file: str, target='', use_testlib=False, flags=''):
         if not os.path.exists('tmp'):
             os.mkdir('tmp')
 
-        out = 'tmp/' + os.path.basename(file) + '.out'
+        out = pjoin('tmp', os.path.basename(file) + '.out')
 
         with open(file) as f:
             cont = f.read()
@@ -24,8 +26,8 @@ def compile_file(file: str, target='', use_testlib=False, flags=''):
             cur_hash = m.hexdigest()
 
         prev_hash = ''
-        if os.path.exists('tmp/' + os.path.basename(file) + '.hash'):
-            with open('tmp/' + os.path.basename(file) + '.hash') as f:
+        if os.path.exists(pjoin('tmp', os.path.basename(file) + '.hash')):
+            with open(pjoin('tmp', os.path.basename(file) + '.hash')) as f:
                 prev_hash = f.read()
 
         if prev_hash == cur_hash:
@@ -34,14 +36,14 @@ def compile_file(file: str, target='', use_testlib=False, flags=''):
 
         cxx_compiler = 'g++ -O2 {} '.format(flags)
         if use_testlib:
-            cxx_compiler += '-I../../lib '
+            cxx_compiler += '-I{0} '.format(pjoin('..', '..', 'lib'))
 
         res = os.system('{:s} "{:s}" -o {:s}'.format(cxx_compiler, file, out))
 
         if not res == 0:
             raise Exception('Compilation error ({})'.format(file))
 
-        with open('tmp/' + os.path.basename(file) + '.hash', 'w') as f:
+        with open(pjoin('tmp', os.path.basename(file) + '.hash'), 'w') as f:
             f.write(cur_hash)
 
         return out

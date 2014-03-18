@@ -16,6 +16,8 @@ from build_scripts import misc
 from build_scripts.misc import write_log
 
 
+pjoin = os.path.join
+
 __author__ = 'ksg'
 TL = 3.0
 DEFAULT_TEST_NUM_WIDTH = 2
@@ -38,14 +40,14 @@ class Test:
 
     def __next__(self):
         self.test_cnt += 1
-        if not os.path.exists(os.path.join(self.folder, self.str_format.format(self.test_cnt))):
+        if not os.path.exists(pjoin(self.folder, self.str_format.format(self.test_cnt))):
             raise StopIteration
 
         return self
 
     def __len__(self):
         len = 1
-        while os.path.exists(os.path.join(self.folder, self.str_format.format(len))):
+        while os.path.exists(pjoin(self.folder, self.str_format.format(len))):
             len += 1
         return len - 1
 
@@ -53,10 +55,10 @@ class Test:
         return self.test_cnt
 
     def inf_path(self):
-        return os.path.join(self.folder, self.str_format.format(self.test_cnt))
+        return pjoin(self.folder, self.str_format.format(self.test_cnt))
 
     def ans_path(self):
-        return os.path.join(self.folder, (self.str_format + '.a').format(self.test_cnt))
+        return pjoin(self.folder, (self.str_format + '.a').format(self.test_cnt))
 
     def inf_name(self):
         return self.str_format.format(self.test_cnt)
@@ -72,13 +74,13 @@ class Test:
 
 
 def validate_tests(args=None):
-    validator = 'validator/validator.cpp'
+    validator = pjoin('validator', 'validator.cpp')
 
     validator_ex = misc.compile_file(validator, 'validator', True)
 
-    if not os.path.exists('tmp/log'):
-        os.mkdir('tmp/log')
-    log_file_name = os.path.join('tmp/log', '{}.log'.format(os.path.basename(validator)))
+    if not os.path.exists(pjoin('tmp', 'log')):
+        os.mkdir(pjoin('tmp', 'log'))
+    log_file_name = pjoin('tmp', 'log', '{}.log'.format(os.path.basename(validator)))
     write_log('\nValidating tests ({})...'.format(datetime.datetime.today()), file=log_file_name)
 
     ok_count = 0
@@ -108,11 +110,11 @@ def validate_tests(args=None):
 def build_tests(args):
     main_solution = args['main_solution'] or cfg.get_main_solution()
 
-    gen_ex = misc.compile_file('gen/gen.cpp', 'gen', True)
+    gen_ex = misc.compile_file(pjoin('gen', 'gen.cpp'), 'gen', True)
 
-    if not os.path.exists('tmp/log'):
-        os.mkdir('tmp/log')
-    log_file_name = os.path.join('tmp/log', 'gen_{}.log'.format(os.path.basename(main_solution)))
+    if not os.path.exists(pjoin('tmp', 'log')):
+        os.mkdir(pjoin('tmp', 'log'))
+    log_file_name = pjoin('tmp', 'log', 'gen_{}.log'.format(os.path.basename(main_solution)))
     write_log('\nGenerating tests ({})...'.format(datetime.datetime.today()), file=log_file_name)
 
     if os.path.exists('tests'):
@@ -149,11 +151,11 @@ def check_solution(args):
     solution = args['solution'] or cfg.get_main_solution()
     sol_ex = misc.compile_file(solution, 'solution')
 
-    check_ex = misc.compile_file('check/check.cpp', 'check', True)
+    check_ex = misc.compile_file(pjoin('check', 'check.cpp'), 'check', True)
 
-    if not os.path.exists('tmp/log'):
-        os.mkdir('tmp/log')
-    log_file_name = os.path.join('tmp/log', '{}.log'.format(os.path.basename(solution)))
+    if not os.path.exists(pjoin('tmp', 'log')):
+        os.mkdir(pjoin('tmp', 'log'))
+    log_file_name = pjoin('tmp', 'log', '{}.log'.format(os.path.basename(solution)))
     write_log('\nChecking solution ({})...'.format(datetime.datetime.today()), file=log_file_name)
 
     ok_count = 0
@@ -161,7 +163,7 @@ def check_solution(args):
         write_log(('test ' + t.str_format + ': ').format(t.test_num()), end='', file=log_file_name)
 
         try:
-            with t.open_inf('r') as inf, open('tmp/problem.out', 'w') as ouf:
+            with t.open_inf('r') as inf, open(pjoin('tmp', 'problem.out'), 'w') as ouf:
                 res = subprocess.call(sol_ex.split(), stdin=inf, stdout=ouf, timeout=TL)
         except subprocess.TimeoutExpired:
             write_log('Time-limit error ({} s.)'.format(TL), file=log_file_name)
@@ -171,7 +173,7 @@ def check_solution(args):
             write_log('Run-time error [{}]'.format(res), file=log_file_name)
             continue
 
-        process = subprocess.Popen([check_ex, t.inf_path(), 'tmp/problem.out', t.ans_path()],
+        process = subprocess.Popen([check_ex, t.inf_path(), pjoin('tmp', 'problem.out'), t.ans_path()],
                                    stderr=subprocess.PIPE)
         for line in process.stderr:
             write_log(str(line, 'utf-8').strip(), end='', file=log_file_name)
@@ -184,7 +186,7 @@ def check_solution(args):
         else:
             write_log(' [{}]'.format(res), file=log_file_name)
 
-        os.remove('tmp/problem.out')
+        os.remove(pjoin('tmp', 'problem.out'))
 
     write_log('passed {:d} from {:d}'.format(ok_count, len(Test('tests'))), end='\n\n', file=log_file_name)
 
@@ -205,8 +207,8 @@ def check_all_solutions(args):
 def stress_test(args):
     model_solution_path = args['model_solution'] or cfg.get_main_solution()
     user_solution_path = args['solution']
-    gen_path = 'gen/gen.cpp'
-    checker_path = 'check/check.cpp'
+    gen_path = pjoin('gen', 'gen.cpp')
+    checker_path = pjoin('check', 'check.cpp')
 
     gen_ex = misc.compile_file(gen_path, 'gen', True)
     check_ex = misc.compile_file(checker_path, 'check', True)
@@ -220,9 +222,9 @@ def stress_test(args):
         shutil.rmtree('stress_tests')
     os.mkdir('stress_tests')
 
-    if not os.path.exists('tmp/log'):
-        os.mkdir('tmp/log')
-    log_file_name = os.path.join('tmp/log', 'stress_{}.log'.format(os.path.basename(user_solution_path)))
+    if not os.path.exists(pjoin('tmp', 'log')):
+        os.mkdir(pjoin('tmp', 'log'))
+    log_file_name = pjoin('tmp', 'log', 'stress_{}.log'.format(os.path.basename(user_solution_path)))
     write_log('\nStart stress testing({})...'.format(datetime.datetime.today()), file=log_file_name)
 
     n = args['num'] or -1
@@ -234,46 +236,50 @@ def stress_test(args):
         write_log('{:0>4d}: '.format(cur_test), end='', file=log_file_name)
 
         for suf in ['in', 'out', 'ans']:
-            if os.path.exists('tmp/problem.' + suf):
-                os.remove('tmp/problem.' + suf)
+            if os.path.exists(pjoin('tmp', 'problem.' + suf)):
+                os.remove(pjoin('tmp', 'problem.' + suf))
 
-        res = os.system('{:s} 2 "{}" 1>tmp/problem.in'.format(gen_ex, random.randint(0, 10 ** 18)))
+        res = os.system('{:s} 2 "{}" 1> {}'.format(gen_ex, random.randint(0, 10 ** 18),
+                                                   pjoin('tmp', 'problem.in')))
         if not res == 0:
             raise Exception('Generator error')
 
         try:
-            with open('tmp/problem.in', 'r') as inf, open('tmp/problem.ans', 'w') as ans:
+            with open(pjoin('tmp', 'problem.in'), 'r') as inf, open(pjoin('tmp', 'problem.ans'), 'w') as ans:
                 res = subprocess.call(m_sol_ex.split(), stdin=inf, stdout=ans, timeout=mtl)
         except subprocess.TimeoutExpired:
             write_log('Time-limit error at model solution ({} s.)'.format(tl), file=log_file_name)
-            shutil.copy('tmp/problem.in', 'stress_tests/{:0>3d}'.format(cur_test))
-            shutil.copy('tmp/problem.ans', 'stress_tests/{:0>3d}.a'.format(cur_test))
+            shutil.copy(pjoin('tmp', 'problem.in'), pjoin('stress_tests', '{:0>3d}'.format(cur_test)))
+            shutil.copy(pjoin('tmp', 'problem.ans'), pjoin('stress_tests', '{:0>3d}.a'.format(cur_test)))
             continue
 
         if not res == 0:
             write_log('Run-time error at model solution [{}]'.format(res), file=log_file_name)
-            shutil.copy('tmp/problem.in', 'stress_tests/{:0>3d}'.format(cur_test))
-            shutil.copy('tmp/problem.ans', 'stress_tests/{:0>3d}.a'.format(cur_test))
+            shutil.copy(pjoin('tmp', 'problem.in'), pjoin('stress_tests', '{:0>3d}'.format(cur_test)))
+            shutil.copy(pjoin('tmp', 'problem.ans'), pjoin('stress_tests', '{:0>3d}.a'.format(cur_test)))
             continue
 
         try:
-            with open('tmp/problem.in', 'r') as inf, open('tmp/problem.out', 'w') as ans:
+            with open(pjoin('tmp', 'problem.in'), 'r') as inf, open(pjoin('tmp', 'problem.out'), 'w') as ans:
                 res = subprocess.call(u_sol_ex.split(), stdin=inf, stdout=ans, timeout=tl)
         except subprocess.TimeoutExpired:
             write_log('Time-limit error ({} s.)'.format(tl), file=log_file_name)
-            shutil.copy('tmp/problem.in', 'stress_tests/{:0>3d}'.format(cur_test))
-            shutil.copy('tmp/problem.ans', 'stress_tests/{:0>3d}.a'.format(cur_test))
-            shutil.copy('tmp/problem.out', 'stress_tests/{:0>3d}.out'.format(cur_test))
+            shutil.copy(pjoin('tmp', 'problem.in'), pjoin('stress_tests', '{:0>3d}'.format(cur_test)))
+            shutil.copy(pjoin('tmp', 'problem.ans'), pjoin('stress_tests', '{:0>3d}.a'.format(cur_test)))
+            shutil.copy(pjoin('tmp', 'problem.out'), pjoin('stress_tests', '{:0>3d}.out'.format(cur_test)))
             continue
 
         if not res == 0:
             write_log('Run-time error [{}]'.format(res), file=log_file_name)
-            shutil.copy('tmp/problem.in', 'stress_tests/{:0>3d}'.format(cur_test))
-            shutil.copy('tmp/problem.ans', 'stress_tests/{:0>3d}.a'.format(cur_test))
-            shutil.copy('tmp/problem.out', 'stress_tests/{:0>3d}.out'.format(cur_test))
+            shutil.copy(pjoin('tmp', 'problem.in'), pjoin('stress_tests', '{:0>3d}'.format(cur_test)))
+            shutil.copy(pjoin('tmp', 'problem.ans'), pjoin('stress_tests', '{:0>3d}.a'.format(cur_test)))
+            shutil.copy(pjoin('tmp', 'problem.out'), pjoin('stress_tests', '{:0>3d}.out'.format(cur_test)))
             continue
 
-        process = subprocess.Popen([check_ex, 'tmp/problem.in', 'tmp/problem.out', 'tmp/problem.ans'],
+        process = subprocess.Popen([check_ex,
+                                    pjoin('tmp', 'problem.in'),
+                                    pjoin('tmp', 'problem.out'),
+                                    pjoin('tmp', 'problem.ans')],
                                    stderr=subprocess.PIPE)
         for line in process.stderr:
             write_log(str(line, 'utf-8').strip(), end='', file=log_file_name)
@@ -285,9 +291,9 @@ def stress_test(args):
             ok_count += 1
         else:
             write_log(' [{}]'.format(res), file=log_file_name)
-            shutil.copy('tmp/problem.in', 'stress_tests/{:0>3d}'.format(cur_test))
-            shutil.copy('tmp/problem.ans', 'stress_tests/{:0>3d}.a'.format(cur_test))
-            shutil.copy('tmp/problem.out', 'stress_tests/{:0>3d}.out'.format(cur_test))
+            shutil.copy(pjoin('tmp', 'problem.in'), pjoin('stress_tests', '{:0>3d}'.format(cur_test)))
+            shutil.copy(pjoin('tmp', 'problem.ans'), pjoin('stress_tests', '{:0>3d}.a'.format(cur_test)))
+            shutil.copy(pjoin('tmp', 'problem.out'), pjoin('stress_tests', '{:0>3d}.out'.format(cur_test)))
 
     write_log('passed {:d} from {:d}'.format(ok_count, n), end='\n\n', file=log_file_name)
 
@@ -295,8 +301,8 @@ def stress_test(args):
 
 
 def build_st(args):
-    with open('statement/' + cfg.get_problem_param('short name') + '.tex') as fin:
-        with open('statement/statement.xml', 'w') as fout:
+    with open(pjoin('statement', cfg.get_problem_param('short name') + '.tex')) as fin:
+        with open(pjoin('statement', 'statement.xml'), 'w') as fout:
             tex2xml.convert(fin, fout,
                             cfg.get_problem_param('system name'),
                             cfg.get_problem_param('source', True),
@@ -364,38 +370,38 @@ def clean(args):
 def add(args):
     contest_root = misc.get_contest_root()
     problem_name = args['name']
-    problem_path = os.path.join(contest_root, 'problems', problem_name)
+    problem_path = pjoin(contest_root, 'problems', problem_name)
 
     os.mkdir(problem_path)
 
-    os.mkdir(os.path.join(problem_path, 'check'))
-    with open(os.path.join(problem_path, 'check/check.cpp'), 'w') as f:
-        data = str(pkgutil.get_data('build_scripts', 'data/bootstrap/check.cpp'), 'utf-8')
+    os.mkdir(pjoin(problem_path, 'check'))
+    with open(pjoin(problem_path, 'check', 'check.cpp'), 'w') as f:
+        data = str(pkgutil.get_data('build_scripts', pjoin('data', 'bootstrap', 'check.cpp')), 'utf-8')
         f.write(data)
 
-    os.mkdir(os.path.join(problem_path, 'gen'))
-    with open(os.path.join(problem_path, 'gen/gen.cpp'), 'w') as f:
-        data = str(pkgutil.get_data('build_scripts', 'data/bootstrap/gen.cpp'), 'utf-8')
+    os.mkdir(pjoin(problem_path, 'gen'))
+    with open(pjoin(problem_path, 'gen', 'gen.cpp'), 'w') as f:
+        data = str(pkgutil.get_data('build_scripts', pjoin('data', 'bootstrap', 'gen.cpp')), 'utf-8')
         f.write(data)
 
-    os.mkdir(os.path.join(problem_path, 'validator'))
-    with open(os.path.join(problem_path, 'validator/validator.cpp'), 'w') as f:
-        data = str(pkgutil.get_data('build_scripts', 'data/bootstrap/validator.cpp'), 'utf-8')
+    os.mkdir(pjoin(problem_path, 'validator'))
+    with open(pjoin(problem_path, 'validator', 'validator.cpp'), 'w') as f:
+        data = str(pkgutil.get_data('build_scripts', pjoin('data', 'bootstrap', 'validator.cpp')), 'utf-8')
         f.write(data)
 
-    os.mkdir(os.path.join(problem_path, 'solutions'))
-    os.mkdir(os.path.join(problem_path, 'solutions', 'WIP'))
-    with open(os.path.join(problem_path, 'solutions/WIP/{0}_ksg.cpp'.format(problem_name)), 'w') as f:
-        data = str(pkgutil.get_data('build_scripts', 'data/bootstrap/sol.cpp'), 'utf-8')
+    os.mkdir(pjoin(problem_path, 'solutions'))
+    os.mkdir(pjoin(problem_path, 'solutions', 'WIP'))
+    with open(pjoin(problem_path, 'solutions', 'WIP', '{0}_ksg.cpp'.format(problem_name)), 'w') as f:
+        data = str(pkgutil.get_data('build_scripts', pjoin('data', 'bootstrap', 'sol.cpp')), 'utf-8')
         f.write(data)
 
-    os.mkdir(os.path.join(problem_path, 'statement'))
-    with open(os.path.join(problem_path, 'statement/' + problem_name + '.tex'), 'w') as f:
-        data = str(pkgutil.get_data('build_scripts', 'data/bootstrap/st.tex'), 'utf-8')
+    os.mkdir(pjoin(problem_path, 'statement'))
+    with open(pjoin(problem_path, 'statement', problem_name + '.tex'), 'w') as f:
+        data = str(pkgutil.get_data('build_scripts', pjoin('data', 'bootstrap', 'st.tex')), 'utf-8')
         f.write(data)
 
-    with open(os.path.join(problem_path, 'problem.conf'), 'w') as f:
-        data = str(pkgutil.get_data('build_scripts', 'data/bootstrap/problem.conf'), 'utf-8')
+    with open(pjoin(problem_path, 'problem.conf'), 'w') as f:
+        data = str(pkgutil.get_data('build_scripts', pjoin('data', 'bootstrap', 'problem.conf')), 'utf-8')
         data = data.format(problem_name)
         f.write(data)
 
@@ -406,25 +412,25 @@ def add_contest(args):
         raise ValueError('folder with the same name ({0}) exists'.format(name))
 
     os.mkdir(name)
-    os.mkdir(os.path.join(name, 'statements'))
-    os.mkdir(os.path.join(name, 'problems'))
-    os.mkdir(os.path.join(name, 'lib'))
+    os.mkdir(pjoin(name, 'statements'))
+    os.mkdir(pjoin(name, 'problems'))
+    os.mkdir(pjoin(name, 'lib'))
 
-    with open(os.path.join(name, 'statements', 'problems.tex'), 'w') as f:
-        data = str(pkgutil.get_data('build_scripts', 'data/bootstrap/problems.tex'), 'utf-8')
+    with open(pjoin(name, 'statements', 'problems.tex'), 'w') as f:
+        data = str(pkgutil.get_data('build_scripts', pjoin('data', 'bootstrap', 'problems.tex')), 'utf-8')
         f.write(data)
 
-    with open(os.path.join(name, 'statements', 'olymp.sty'), 'w') as f:
-        data = str(pkgutil.get_data('build_scripts', 'data/bootstrap/olymp.sty'), 'utf-8')
+    with open(pjoin(name, 'statements', 'olymp.sty'), 'w') as f:
+        data = str(pkgutil.get_data('build_scripts', pjoin('data', 'bootstrap', 'olymp.sty')), 'utf-8')
         f.write(data)
 
-    with open(os.path.join(name, 'lib', 'testlib.h'), 'w') as f:
-        data = str(pkgutil.get_data('build_scripts', 'data/testlib.h'), 'utf-8')
+    with open(pjoin(name, 'lib', 'testlib.h'), 'w') as f:
+        data = str(pkgutil.get_data('build_scripts', pjoin('data', 'testlib.h')), 'utf-8')
         f.write(data)
 
 
 def update_scripts(args):
-    dst_folder = os.path.join(misc.get_contest_root(), 'scripts')
+    dst_folder = pjoin(misc.get_contest_root(), 'scripts')
     src_folder = os.path.dirname(sys.argv[0])
 
     if os.path.normpath(os.path.expandvars(dst_folder)) == os.path.normpath(os.path.expandvars(src_folder)):
