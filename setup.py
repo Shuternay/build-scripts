@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='build-scripts',
-    version='1.0.2-r5',
+    version='1.0.2-r6',
     packages=['build_scripts'],
     package_data={'build_scripts': ['data/bootstrap/*', 'data/*.cpp', 'data/*.h']},
     url='https://github.com/Shuternay/build-scripts',

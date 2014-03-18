@@ -428,6 +428,10 @@ def add_contest(args):
         data = str(pkgutil.get_data('build_scripts', pjoin('data', 'testlib.h')), 'utf-8')
         f.write(data)
 
+    with open(pjoin(name, 'contest.conf'), 'w') as f:
+        data = str(pkgutil.get_data('build_scripts', pjoin('data', 'bootstrap', 'contest.conf')), 'utf-8')
+        f.write(data)
+
 
 def update_scripts(args):
     dst_folder = pjoin(misc.get_contest_root(), 'scripts')
