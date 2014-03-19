@@ -100,6 +100,5 @@ with open('out.csv', 'w', newline='') as f:
     csv_header += ('sum', )
     writer.writerow(csv_header)
 
-    print(users.values())
     for user in sorted(users):
-        writer.writerow(users[user].get_row(header, problems))
+        writer.writerow(users[user].get_row(header, sorted(problems)))
