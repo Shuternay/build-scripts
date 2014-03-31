@@ -74,13 +74,14 @@ class Test:
 
 
 def validate_tests(args=None):
-    validator = pjoin('validator', 'validator.cpp')
+    validator_path = cfg.get_problem_param('validator', True) or 'validator/validator.cpp'
+    validator_path = os.path.normpath(validator_path)
 
-    validator_ex = misc.compile_file(validator, 'validator', True)
+    validator_ex = misc.compile_file(validator_path, 'validator', True)
 
     if not os.path.exists(pjoin('tmp', 'log')):
         os.mkdir(pjoin('tmp', 'log'))
-    log_file_name = pjoin('tmp', 'log', '{}.log'.format(os.path.basename(validator)))
+    log_file_name = pjoin('tmp', 'log', '{}.log'.format(os.path.basename(validator_path)))
     write_log('\nValidating tests ({})...'.format(datetime.datetime.today()), file=log_file_name)
 
     ok_count = 0
@@ -110,7 +111,9 @@ def validate_tests(args=None):
 def build_tests(args):
     main_solution = args['main_solution'] or cfg.get_main_solution()
 
-    gen_ex = misc.compile_file(pjoin('gen', 'gen.cpp'), 'gen', True)
+    gen_path = cfg.get_problem_param('gen', True) or 'gen/gen.cpp'
+    gen_path = os.path.normpath(gen_path)
+    gen_ex = misc.compile_file(gen_path, 'gen', True)
 
     if not os.path.exists(pjoin('tmp', 'log')):
         os.mkdir(pjoin('tmp', 'log'))
@@ -151,7 +154,9 @@ def check_solution(args):
     solution = args['solution'] or cfg.get_main_solution()
     sol_ex = misc.compile_file(solution, 'solution')
 
-    check_ex = misc.compile_file(pjoin('check', 'check.cpp'), 'check', True)
+    checker_path = cfg.get_problem_param('checker', True) or 'check/check.cpp'
+    checker_path = os.path.normpath(checker_path)
+    check_ex = misc.compile_file(checker_path, 'check', True)
 
     if not os.path.exists(pjoin('tmp', 'log')):
         os.mkdir(pjoin('tmp', 'log'))
@@ -207,8 +212,12 @@ def check_all_solutions(args):
 def stress_test(args):
     model_solution_path = args['model_solution'] or cfg.get_main_solution()
     user_solution_path = args['solution']
-    gen_path = pjoin('gen', 'gen.cpp')
-    checker_path = pjoin('check', 'check.cpp')
+
+    gen_path = cfg.get_problem_param('gen', True) or 'gen/gen.cpp'
+    gen_path = os.path.normpath(gen_path)
+
+    checker_path = cfg.get_problem_param('checker', True) or 'check/check.cpp'
+    checker_path = os.path.normpath(checker_path)
 
     gen_ex = misc.compile_file(gen_path, 'gen', True)
     check_ex = misc.compile_file(checker_path, 'check', True)
