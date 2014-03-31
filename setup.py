@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='build-scripts',
-    version='1.0.3-r8',
+    version='1.0.3-r9',
     packages=['build_scripts'],
     package_data={'build_scripts': ['data/bootstrap/*', 'data/*.cpp', 'data/*.h']},
     url='https://github.com/Shuternay/build-scripts',

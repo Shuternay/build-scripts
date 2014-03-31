@@ -74,7 +74,7 @@ class Test:
 
 
 def validate_tests(args=None):
-    validator_path = cfg.get_problem_param('validator', True) or 'validator/validator.cpp'
+    validator_path = cfg.get_problem_param('validator', True) or 'validator.cpp'
     validator_path = os.path.normpath(validator_path)
 
     validator_ex = misc.compile_file(validator_path, 'validator', True)
@@ -111,7 +111,7 @@ def validate_tests(args=None):
 def build_tests(args):
     main_solution = args['main_solution'] or cfg.get_main_solution()
 
-    gen_path = cfg.get_problem_param('gen', True) or 'gen/gen.cpp'
+    gen_path = cfg.get_problem_param('gen', True) or 'gen.cpp'
     gen_path = os.path.normpath(gen_path)
     gen_ex = misc.compile_file(gen_path, 'gen', True)
 
@@ -154,9 +154,9 @@ def check_solution(args):
     solution = args['solution'] or cfg.get_main_solution()
     sol_ex = misc.compile_file(solution, 'solution')
 
-    checker_path = cfg.get_problem_param('checker', True) or 'check/check.cpp'
+    checker_path = cfg.get_problem_param('checker', True) or 'checker.cpp'
     checker_path = os.path.normpath(checker_path)
-    check_ex = misc.compile_file(checker_path, 'check', True)
+    check_ex = misc.compile_file(checker_path, 'checker', True)
 
     if not os.path.exists(pjoin('tmp', 'log')):
         os.mkdir(pjoin('tmp', 'log'))
@@ -213,10 +213,10 @@ def stress_test(args):
     model_solution_path = args['model_solution'] or cfg.get_main_solution()
     user_solution_path = args['solution']
 
-    gen_path = cfg.get_problem_param('gen', True) or 'gen/gen.cpp'
+    gen_path = cfg.get_problem_param('gen', True) or 'gen.cpp'
     gen_path = os.path.normpath(gen_path)
 
-    checker_path = cfg.get_problem_param('checker', True) or 'check/check.cpp'
+    checker_path = cfg.get_problem_param('checker', True) or 'checker.cpp'
     checker_path = os.path.normpath(checker_path)
 
     gen_ex = misc.compile_file(gen_path, 'gen', True)
@@ -335,12 +335,16 @@ def upload(args):
 
         if args['checker']:
             print('Uploading checker')
-            with open('check/check.cpp', 'rb') as f:
-                ftp.storbinary('STOR check.cpp', f)
+            checker_path = cfg.get_problem_param('checker', True) or 'checker.cpp'
+            checker_path = os.path.normpath(checker_path)
+            with open(checker_path, 'rb') as f:
+                ftp.storbinary('STOR checker.cpp', f)
 
         if args['validator']:
             print('Uploading validator')
-            with open('validator/validator.cpp', 'rb') as f:
+            validator_path = cfg.get_problem_param('validator', True) or 'validator.cpp'
+            validator_path = os.path.normpath(validator_path)
+            with open(validator_path, 'rb') as f:
                 ftp.storbinary('STOR validator.cpp', f)
 
         if args['testlib']:
@@ -383,24 +387,21 @@ def add(args):
 
     os.mkdir(problem_path)
 
-    os.mkdir(pjoin(problem_path, 'check'))
-    with open(pjoin(problem_path, 'check', 'check.cpp'), 'w') as f:
-        data = str(pkgutil.get_data('build_scripts', pjoin('data', 'bootstrap', 'check.cpp')), 'utf-8')
+    with open(pjoin(problem_path, 'checker.cpp'), 'w') as f:
+        data = str(pkgutil.get_data('build_scripts', pjoin('data', 'bootstrap', 'checker.cpp')), 'utf-8')
         f.write(data)
 
-    os.mkdir(pjoin(problem_path, 'gen'))
-    with open(pjoin(problem_path, 'gen', 'gen.cpp'), 'w') as f:
+    with open(pjoin(problem_path, 'gen.cpp'), 'w') as f:
         data = str(pkgutil.get_data('build_scripts', pjoin('data', 'bootstrap', 'gen.cpp')), 'utf-8')
         f.write(data)
 
-    os.mkdir(pjoin(problem_path, 'validator'))
-    with open(pjoin(problem_path, 'validator', 'validator.cpp'), 'w') as f:
+    with open(pjoin(problem_path, 'validator.cpp'), 'w') as f:
         data = str(pkgutil.get_data('build_scripts', pjoin('data', 'bootstrap', 'validator.cpp')), 'utf-8')
         f.write(data)
 
     os.mkdir(pjoin(problem_path, 'solutions'))
     os.mkdir(pjoin(problem_path, 'solutions', 'WIP'))
-    with open(pjoin(problem_path, 'solutions', 'WIP', '{0}_ksg.cpp'.format(problem_name)), 'w') as f:
+    with open(pjoin(problem_path, 'solutions', 'WIP', '{0}.cpp'.format(problem_name)), 'w') as f:
         data = str(pkgutil.get_data('build_scripts', pjoin('data', 'bootstrap', 'sol.cpp')), 'utf-8')
         f.write(data)
 
