@@ -34,7 +34,7 @@ def compile_file(file: str, target='', use_testlib=False, flags=''):
             print('Using previous version of binary\n')
             return out  # TODO check for preprocessor and compiler flags
 
-        cxx_compiler = 'g++ -O2 {} '.format(flags)
+        cxx_compiler = 'g++ -O2 -Wall -std=c++11 {} '.format(flags)
         if use_testlib:
             cxx_compiler += '-I{0} '.format(pjoin('..', '..', 'lib'))
 
