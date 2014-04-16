@@ -48,6 +48,38 @@ def compile_file(file: str, target='', use_testlib=False, flags=''):
 
         return out
 
+    if file.endswith('.java'):
+        if not os.path.exists('tmp'):
+            os.mkdir('tmp')
+
+        out = 'java -cp tmp -Xmx256M -Xss64M {}'.format(os.path.basename(file[:-len('.java')]))
+
+        with open(file) as f:
+            cont = f.read()
+            m = hashlib.md5()
+            m.update(cont.encode('utf-8'))
+            cur_hash = m.hexdigest()
+
+        prev_hash = ''
+        if os.path.exists(pjoin('tmp', os.path.basename(file) + '.hash')):
+            with open(pjoin('tmp', os.path.basename(file) + '.hash')) as f:
+                prev_hash = f.read()
+
+        if prev_hash == cur_hash:
+            print('Using previous version of binary\n')
+            return out  # TODO check for preprocessor and compiler flags
+
+        java_compiler = 'javac {}'.format(flags)  # TODO java testlib
+        res = os.system('{:s} "{:s}" -d {:s}'.format(java_compiler, file, 'tmp'))
+
+        if not res == 0:
+            raise Exception('Compilation error ({})'.format(file))
+
+        with open(pjoin('tmp', os.path.basename(file) + '.hash'), 'w') as f:
+            f.write(cur_hash)
+
+        return out
+
     if file.endswith('.py'):
         return 'python3 ' + file
 
