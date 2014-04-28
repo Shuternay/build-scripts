@@ -5,6 +5,7 @@ import os
 import pkgutil
 import random
 import shutil
+import stat
 import subprocess
 import ftplib
 import netrc
@@ -389,7 +390,6 @@ def add(args):
         raise ValueError('folder with the same name ({0}) exists'.format(problem_name))
 
     os.mkdir(problem_path)
-    os.mkdir(pjoin(problem_path, 'samples'))
     os.mkdir(pjoin(problem_path, 'solutions'))
     os.mkdir(pjoin(problem_path, 'statement'))
 
@@ -401,6 +401,7 @@ def add(args):
         ('sol.cpp', 'solutions/{0}.cpp'.format(problem_name), False),
         ('problem.conf', 'problem.conf', True),
         ('st.tex', 'statement/{0}.tex'.format(problem_name), False),
+        ('valuer.cfg', 'valuer.cfg', False),
     ]
 
     for src, dst, ext in files:
@@ -426,10 +427,10 @@ def add_contest(args):
         ('problems.tex', 'statements/problems.tex'),
         ('olymp.sty', 'statements/olymp.sty'),
         ('contest.conf', 'contest.conf'),
-        # ('import.sty', 'statement/import.sty'.format(problem_name)),
-        # ('clean.sh', 'statement/clean.sh'.format(problem_name)),
-        # ('r.sh', 'statement/r.sh'.format(problem_name)),
-        # ('r.cmd', 'statement/r.cmd'.format(problem_name)),
+        ('import.sty', 'statements/import.sty'.format(name)),
+        ('clean.sh', 'statements/clean.sh'.format(name)),
+        ('r.sh', 'statements/r.sh'.format(name)),
+        ('r.cmd', 'statements/r.cmd'.format(name)),
     ]
 
     for src, dst in files:
@@ -441,8 +442,8 @@ def add_contest(args):
         data = str(pkgutil.get_data('build_scripts', pjoin('data', 'testlib.h')), 'utf-8')
         f.write(data)
 
-        # for file in ('r.sh', 'r.cmd', 'cleans.sh'):
-        #     os.chmod(os.path.join(name, file))
+        for file in ('r.sh', 'r.cmd', 'clean.sh'):
+            os.chmod(os.path.join(name, 'statements', file), stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH)
 
 
 def update_scripts(args):

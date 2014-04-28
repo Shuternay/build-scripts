@@ -1,27 +1,28 @@
 \documentclass[11pt,a4paper,oneside]{article}
 
-\usepackage[english,russian]{babel}
+\usepackage{ulem}
 \usepackage[T2A]{fontenc}
 \usepackage[utf8]{inputenc}
+\usepackage[english,russian]{babel}
 \usepackage[russian]{olymp}
 \usepackage{graphicx}
-\usepackage{expdlist}
-\usepackage{mfpic}
-\usepackage{amsmath}
-\usepackage{amssymb}
-\usepackage{comment}
-\usepackage{listings}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{epsfig}
+\usepackage{import}
+\usepackage{wrapfig}
 \usepackage{epigraph}
-\usepackage{url}
+\usepackage{verbatim}
+\usepackage[usenames]{color}
 
 \DeclareMathOperator{\nott}{not}
 
 \begin{document}
 
-\renewcommand{\t}[1]{\mbox{\texttt{#1}}}
+\renewcommand{\t}[1]{\ifmmode{\mathtt{#1}}\else{\texttt{#1}}\fi}
 \newcommand{\s}[1]{\mbox{``\t{#1}''}}
 \newcommand{\eps}{\varepsilon}
 \renewcommand{\phi}{\varphi}
+\newcommand{\bs}{\mbox{$\backslash$}}
 \newcommand{\plainhat}{{\char 94}}
 
 \newcommand{\Z}{\mathbb{Z}}
@@ -33,15 +34,16 @@
 
 \createsection{\Note}{Пояснение}
 
-\contest{contest-name}{city}{date}
-
-\newcommand{\statement}[1]{
-\protect\graphicspath{{../problems/#1/statement/}}
-\protect\input ../problems/#1/statement/#1.tex
+\contest{
+contest
+}{
+city
+}{
+date
 }
 
-% uncomment when statement is ready
-\statement{problem-name}
+\newcommand{\prob}[1]{\import{../problems/#1/statement/}{./#1.tex}}
 
+%\prob{prob-name}
 
 \end{document}
