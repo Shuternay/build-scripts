@@ -385,35 +385,30 @@ def add(args):
     problem_name = args['name']
     problem_path = pjoin(contest_root, 'problems', problem_name)
 
+    if os.path.exists(problem_name):
+        raise ValueError('folder with the same name ({0}) exists'.format(problem_name))
+
     os.mkdir(problem_path)
-
-    with open(pjoin(problem_path, 'checker.cpp'), 'w') as f:
-        data = str(pkgutil.get_data('build_scripts', pjoin('data', 'bootstrap', 'checker.cpp')), 'utf-8')
-        f.write(data)
-
-    with open(pjoin(problem_path, 'gen.cpp'), 'w') as f:
-        data = str(pkgutil.get_data('build_scripts', pjoin('data', 'bootstrap', 'gen.cpp')), 'utf-8')
-        f.write(data)
-
-    with open(pjoin(problem_path, 'validator.cpp'), 'w') as f:
-        data = str(pkgutil.get_data('build_scripts', pjoin('data', 'bootstrap', 'validator.cpp')), 'utf-8')
-        f.write(data)
-
+    os.mkdir(pjoin(problem_path, 'samples'))
     os.mkdir(pjoin(problem_path, 'solutions'))
-    os.mkdir(pjoin(problem_path, 'solutions', 'WIP'))
-    with open(pjoin(problem_path, 'solutions', 'WIP', '{0}.cpp'.format(problem_name)), 'w') as f:
-        data = str(pkgutil.get_data('build_scripts', pjoin('data', 'bootstrap', 'sol.cpp')), 'utf-8')
-        f.write(data)
-
     os.mkdir(pjoin(problem_path, 'statement'))
-    with open(pjoin(problem_path, 'statement', problem_name + '.tex'), 'w') as f:
-        data = str(pkgutil.get_data('build_scripts', pjoin('data', 'bootstrap', 'st.tex')), 'utf-8')
-        f.write(data)
 
-    with open(pjoin(problem_path, 'problem.conf'), 'w') as f:
-        data = str(pkgutil.get_data('build_scripts', pjoin('data', 'bootstrap', 'problem.conf')), 'utf-8')
-        data = data.format(problem_name)
-        f.write(data)
+    files = [
+        #(source, destination, extract variables),
+        ('checker.cpp', 'checker.cpp', False),
+        ('gen.cpp', 'gen.cpp', False),
+        ('validator.cpp', 'validator.cpp', False),
+        ('sol.cpp', 'solutions/{0}.cpp'.format(problem_name), False),
+        ('problem.conf', 'problem.conf', True),
+        ('st.tex', 'statement/{0}.tex'.format(problem_name), False),
+    ]
+
+    for src, dst, ext in files:
+        with open(os.path.join(problem_path, dst), 'w') as f:
+            data = str(pkgutil.get_data('build_scripts', os.path.join('data', 'bootstrap', src)), 'utf-8')
+            if ext:
+                data = data.format(problem_name)
+            f.write(data)
 
 
 def add_contest(args):
@@ -426,21 +421,28 @@ def add_contest(args):
     os.mkdir(pjoin(name, 'problems'))
     os.mkdir(pjoin(name, 'lib'))
 
-    with open(pjoin(name, 'statements', 'problems.tex'), 'w') as f:
-        data = str(pkgutil.get_data('build_scripts', pjoin('data', 'bootstrap', 'problems.tex')), 'utf-8')
-        f.write(data)
+    files = [
+        #(source, destination),
+        ('problems.tex', 'statements/problems.tex'),
+        ('olymp.sty', 'statements/olymp.sty'),
+        ('contest.conf', 'contest.conf'),
+        # ('import.sty', 'statement/import.sty'.format(problem_name)),
+        # ('clean.sh', 'statement/clean.sh'.format(problem_name)),
+        # ('r.sh', 'statement/r.sh'.format(problem_name)),
+        # ('r.cmd', 'statement/r.cmd'.format(problem_name)),
+    ]
 
-    with open(pjoin(name, 'statements', 'olymp.sty'), 'w') as f:
-        data = str(pkgutil.get_data('build_scripts', pjoin('data', 'bootstrap', 'olymp.sty')), 'utf-8')
-        f.write(data)
+    for src, dst in files:
+        with open(os.path.join(name, dst), 'w') as f:
+            data = str(pkgutil.get_data('build_scripts', os.path.join('data', 'bootstrap', src)), 'utf-8')
+            f.write(data)
 
     with open(pjoin(name, 'lib', 'testlib.h'), 'w') as f:
         data = str(pkgutil.get_data('build_scripts', pjoin('data', 'testlib.h')), 'utf-8')
         f.write(data)
 
-    with open(pjoin(name, 'contest.conf'), 'w') as f:
-        data = str(pkgutil.get_data('build_scripts', pjoin('data', 'bootstrap', 'contest.conf')), 'utf-8')
-        f.write(data)
+        # for file in ('r.sh', 'r.cmd', 'cleans.sh'):
+        #     os.chmod(os.path.join(name, file))
 
 
 def update_scripts(args):
