@@ -10,7 +10,6 @@ import subprocess
 import ftplib
 import netrc
 import time
-import sys
 
 from build_scripts import tex2xml
 from build_scripts import misc
@@ -446,19 +445,6 @@ def add_contest(args):
             os.chmod(os.path.join(name, 'statements', file), stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH)
 
 
-def update_scripts(args):
-    dst_folder = pjoin(misc.get_contest_root(), 'scripts')
-    src_folder = os.path.dirname(sys.argv[0])
-
-    if os.path.normpath(os.path.expandvars(dst_folder)) == os.path.normpath(os.path.expandvars(src_folder)):
-        raise Exception('dst_path == src_path')
-
-    if os.path.exists(dst_folder):
-        shutil.rmtree(dst_folder)
-
-    shutil.copytree(src_folder, dst_folder)
-
-
 def main():
     global cfg
     cfg = misc.Config()
@@ -520,10 +506,6 @@ def main():
     parser_add_contest = subparsers.add_parser('add_contest', help='create new contest')
     parser_add_contest.add_argument('name', help='contest name')
     parser_add_contest.set_defaults(func=add_contest)
-
-    # (update) update scripts
-    parser_update = subparsers.add_parser('update', help='update scripts in current contest directory')
-    parser_update.set_defaults(func=update_scripts)
 
     in_args = parser.parse_args()
     if in_args.__contains__('func'):
