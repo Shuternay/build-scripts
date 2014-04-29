@@ -46,6 +46,12 @@ class Test:
     def ans_path(self):
         return pjoin(self.folder, (self.str_format + '.a').format(self.test_num))
 
+    def sample_inf_path(self, samples_folder):
+        return pjoin(samples_folder, (self.str_format + '.t').format(self.test_num))
+
+    def sample_ans_path(self, samples_folder):
+        return pjoin(samples_folder, (self.str_format + '.t.a').format(self.test_num))
+
     def inf_name(self):
         return self.str_format.format(self.test_num)
 
@@ -148,6 +154,16 @@ def build_tests(args):
             continue
         else:
             write_log("Generated", file=log_file_name)
+
+    if cfg.get_problem_param('samples_num', True):
+        samples_num = int(cfg.get_problem_param('samples_num'))
+        samples_folder = cfg.get_problem_param('samples_folder', True) or 'samples'
+        if os.path.exists(samples_folder):
+            shutil.rmtree(samples_folder)
+        os.mkdir(samples_folder)
+        for i in range(1, samples_num + 1):
+            shutil.copy2(Test('tests', i).inf_path(), Test('tests', i).sample_inf_path(samples_folder))
+            shutil.copy2(Test('tests', i).ans_path(), Test('tests', i).sample_ans_path(samples_folder))
 
 
 def check_solution(args):
