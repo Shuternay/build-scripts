@@ -18,7 +18,8 @@ from build_scripts.misc import write_log
 pjoin = os.path.join
 
 __author__ = 'ksg'
-TL = 3.0
+DEFAULT_TL = 3.0
+DEFAULT_ML = 512000
 DEFAULT_TEST_NUM_WIDTH = 2
 
 
@@ -174,6 +175,9 @@ def check_solution(args):
     checker_path = os.path.normpath(checker_path)
     check_ex = misc.compile_file(checker_path, 'checker', True)
 
+    tl = args['tl'] or cfg.get_problem_param('tl', True) or DEFAULT_TL
+    tl = float(tl)  # because cfg.get_problem_param returns string or None
+
     if not os.path.exists(pjoin('tmp', 'log')):
         os.mkdir(pjoin('tmp', 'log'))
     log_file_name = pjoin('tmp', 'log', '{}.log'.format(os.path.basename(solution)))
@@ -181,11 +185,13 @@ def check_solution(args):
 
     ok_count = 0
     for t in Test.test_gen('tests'):
+        write_log(('test ' + t.str_format + ': ').format(t.test_num), end='', file=log_file_name)
+
         try:
             with t.open_inf('r') as inf, open(pjoin('tmp', 'problem.out'), 'w') as ouf:
-                res = subprocess.call(sol_ex.split(), stdin=inf, stdout=ouf, timeout=TL)
+                res = subprocess.call(sol_ex.split(), stdin=inf, stdout=ouf, timeout=tl)
         except subprocess.TimeoutExpired:
-            write_log('Time-limit error ({} s.)'.format(TL), file=log_file_name)
+            write_log('Time-limit error ({} s.)'.format(tl), file=log_file_name)
             continue
 
         if not res == 0:
@@ -200,7 +206,6 @@ def check_solution(args):
             cerr = cerr[:-1]
 
         res = process.returncode
-        write_log(('test ' + t.str_format + ': ').format(t.test_num), end='', file=log_file_name)
 
         if res == 0:
             ok_count += 1
@@ -220,7 +225,8 @@ def check_all_solutions(args):
 
     results = []
     for sol in solutions:
-        results.append(check_solution({'solution': sol[1]}))
+        args.update({'solution': sol[1]})
+        results.append(args)
 
     for sol, res in zip(solutions, results):
         print('{} ({}): [{} / {}]'.format(sol[0], sol[1], res[0], res[1]))
@@ -241,8 +247,9 @@ def stress_test(args):
     m_sol_ex = misc.compile_file(model_solution_path, 'model_solution')
     u_sol_ex = misc.compile_file(user_solution_path, 'user_solution')
 
-    mtl = args['MTL'] or 5
-    tl = args['TL'] or 2
+    mtl = args['mtl'] or 5
+    tl = args['tl'] or cfg.get_problem_param('tl', True) or DEFAULT_TL
+    tl = float(tl)  # because cfg.get_problem_param returns string or None
 
     if os.path.exists('stress_tests'):
         shutil.rmtree('stress_tests')
@@ -479,10 +486,12 @@ def main():
     # (check) check solution
     parser_check = subparsers.add_parser('check', help='Check solution on tests')
     parser_check.add_argument('solution', nargs='?', help='path to solution for check')
+    parser_check.add_argument('--tl', type=float, help='Time limit for solution')
     parser_check.set_defaults(func=check_solution)
 
     # (check_all) check all solutions
     parser_check_all = subparsers.add_parser('check_all', help='check all solutions')
+    parser_check_all.add_argument('--tl', type=float, help='Time limit for solution')
     parser_check_all.set_defaults(func=check_all_solutions)
 
     # (validate )validate tests
@@ -494,8 +503,8 @@ def main():
     parser_stress.add_argument('solution', help='path to solution for check')
     parser_stress.add_argument('model_solution', nargs='?', help='model solution for answers')
     parser_stress.add_argument('-n', '--num', type=int, help='number of tests')
-    parser_stress.add_argument('--MTL', type=float, help='Time limit for model solution')
-    parser_stress.add_argument('--TL', type=float, help='Time limit for user solution')
+    parser_stress.add_argument('--mtl', type=float, help='Time limit for model solution')
+    parser_stress.add_argument('--tl', type=float, help='Time limit for user solution')
     parser_stress.set_defaults(func=stress_test)
 
     # (build_st) build statement.xml
