@@ -26,51 +26,51 @@ DEFAULT_TEST_NUM_WIDTH = 2
 class Test:
     """iterator that returns tests in specified folder"""
 
-    def __init__(self, folder):
+    def __init__(self, folder, test_num):
         self.folder = folder
-        self.test_cnt = 0
+        self.test_num = test_num
         if not os.path.exists(folder):
             raise Exception('Folder with tests does not exists')
         name_width = cfg.get_problem_param('test_num_width') or str(DEFAULT_TEST_NUM_WIDTH)
         self.str_format = '{:0>' + name_width + 'd}'  # '{:0>2d}'
 
-    def __iter__(self):
-        self.test_cnt = 0
-        return self
-
-    def __next__(self):
-        self.test_cnt += 1
-        if not os.path.exists(pjoin(self.folder, self.str_format.format(self.test_cnt))):
-            raise StopIteration
-
-        return self
-
-    def __len__(self):
-        len = 1
-        while os.path.exists(pjoin(self.folder, self.str_format.format(len))):
-            len += 1
-        return len - 1
+    def exists(self):
+        return os.path.exists(pjoin(self.folder, self.str_format.format(self.test_num)))
 
     def test_num(self):
-        return self.test_cnt
+        return self.test_num
 
     def inf_path(self):
-        return pjoin(self.folder, self.str_format.format(self.test_cnt))
+        return pjoin(self.folder, self.str_format.format(self.test_num))
 
     def ans_path(self):
-        return pjoin(self.folder, (self.str_format + '.a').format(self.test_cnt))
+        return pjoin(self.folder, (self.str_format + '.a').format(self.test_num))
 
     def inf_name(self):
-        return self.str_format.format(self.test_cnt)
+        return self.str_format.format(self.test_num)
 
     def ans_name(self):
-        return (self.str_format + '.a').format(self.test_cnt)
+        return (self.str_format + '.a').format(self.test_num)
 
     def open_inf(self, mode='r'):
         return open(self.inf_path(), mode)
 
     def open_ans(self, mode='r'):
         return open(self.ans_path(), mode)
+
+    @staticmethod
+    def test_gen(folder):
+        test_cnt = 1
+        while Test(folder, test_cnt).exists():
+            yield Test(folder, test_cnt)
+            test_cnt += 1
+
+    @classmethod
+    def test_len(cls, folder):
+        test_cnt = 0
+        while cls(folder, test_cnt + 1).exists():
+            test_cnt += 1
+        return test_cnt
 
 
 def validate_tests(args=None):
@@ -86,8 +86,8 @@ def validate_tests(args=None):
 
     ok_count = 0
 
-    for t in Test('tests'):
-        write_log(('test ' + t.str_format + ': ').format(t.test_num()), end='', file=log_file_name)
+    for t in Test.test_gen('tests'):
+        write_log(('test ' + t.str_format + ': ').format(t.test_num), end='', file=log_file_name)
 
         with t.open_inf() as inf:
             process = subprocess.Popen(validator_ex, stdin=inf, stderr=subprocess.PIPE)
@@ -102,10 +102,10 @@ def validate_tests(args=None):
         else:
             write_log(' [{}]'.format(res), file=log_file_name)
 
-    write_log('correct {:d} from {:d}'.format(ok_count, len(Test('tests'))), file=log_file_name)
+    write_log('correct {:d} from {:d}'.format(ok_count, Test.test_len('tests')), file=log_file_name)
     print('Validating complete\n')
 
-    return [ok_count, len(Test('tests'))]
+    return [ok_count, Test.test_len('tests')]
 
 
 def build_tests(args):
@@ -134,8 +134,8 @@ def build_tests(args):
 
     write_log('\nGenerating answers...', file=log_file_name)
 
-    for t in Test('tests'):
-        write_log(('test ' + t.str_format + ': ').format(t.test_num()), end="", file=log_file_name)
+    for t in Test.test_gen('tests'):
+        write_log(('test ' + t.str_format + ': ').format(t.test_num), end="", file=log_file_name)
 
         with t.open_inf('r') as inf, t.open_ans('w') as ans:
             res = subprocess.call(
@@ -164,8 +164,8 @@ def check_solution(args):
     write_log('\nChecking solution ({})...'.format(datetime.datetime.today()), file=log_file_name)
 
     ok_count = 0
-    for t in Test('tests'):
-        write_log(('test ' + t.str_format + ': ').format(t.test_num()), end='', file=log_file_name)
+    for t in Test.test_gen('tests'):
+        write_log(('test ' + t.str_format + ': ').format(t.test_num), end='', file=log_file_name)
 
         try:
             with t.open_inf('r') as inf, open(pjoin('tmp', 'problem.out'), 'w') as ouf:
@@ -193,9 +193,9 @@ def check_solution(args):
 
         os.remove(pjoin('tmp', 'problem.out'))
 
-    write_log('passed {:d} from {:d}'.format(ok_count, len(Test('tests'))), end='\n\n', file=log_file_name)
+    write_log('passed {:d} from {:d}'.format(ok_count, Test.test_len('tests')), end='\n\n', file=log_file_name)
 
-    return [ok_count, len(Test('tests'))]
+    return [ok_count, Test.test_len('tests')]
 
 
 def check_all_solutions(args):
@@ -354,7 +354,7 @@ def upload(args):
 
         if args['tests']:
             print('Uploading tests')
-            for t in Test('tests'):
+            for t in Test.test_gen('tests'):
                 print('uploading {} and {}'.format(t.inf_name(), t.ans_name()))
                 with open(t.inf_path(), 'rb') as f:
                     ftp.storbinary('STOR tests/{}'.format(t.inf_name()), f)
