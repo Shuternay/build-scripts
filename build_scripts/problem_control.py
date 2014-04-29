@@ -9,7 +9,6 @@ import stat
 import subprocess
 import ftplib
 import netrc
-import time
 
 from build_scripts import tex2xml
 from build_scripts import misc
@@ -93,20 +92,21 @@ def validate_tests(args=None):
     ok_count = 0
 
     for t in Test.test_gen('tests'):
-        write_log(('test ' + t.str_format + ': ').format(t.test_num), end='', file=log_file_name)
-
         with t.open_inf() as inf:
             process = subprocess.Popen(validator_ex, stdin=inf, stderr=subprocess.PIPE)
-        for line in process.stderr:
-            write_log(str(line, 'utf-8').strip(), end='', file=log_file_name)
 
-        time.sleep(0.1)  # FIXME strange RE
-        res = process.poll()
+        cerr = str(process.communicate()[1], 'utf-8')
+        if cerr and cerr.endswith('\n'):
+            cerr = cerr[:-1]
+
+        res = process.returncode
+        write_log(('test ' + t.str_format + ': ').format(t.test_num), end='', file=log_file_name)
+
         if res == 0:
             ok_count += 1
-            write_log('OK', file=log_file_name)
+            write_log('OK ({})'.format(cerr) if cerr else 'OK', file=log_file_name)
         else:
-            write_log(' [{}]'.format(res), file=log_file_name)
+            write_log('{} [{}]'.format(cerr, res), file=log_file_name)
 
     write_log('correct {:d} from {:d}'.format(ok_count, Test.test_len('tests')), file=log_file_name)
     print('Validating complete\n')
@@ -181,8 +181,6 @@ def check_solution(args):
 
     ok_count = 0
     for t in Test.test_gen('tests'):
-        write_log(('test ' + t.str_format + ': ').format(t.test_num), end='', file=log_file_name)
-
         try:
             with t.open_inf('r') as inf, open(pjoin('tmp', 'problem.out'), 'w') as ouf:
                 res = subprocess.call(sol_ex.split(), stdin=inf, stdout=ouf, timeout=TL)
@@ -196,16 +194,19 @@ def check_solution(args):
 
         process = subprocess.Popen([check_ex, t.inf_path(), pjoin('tmp', 'problem.out'), t.ans_path()],
                                    stderr=subprocess.PIPE)
-        for line in process.stderr:
-            write_log(str(line, 'utf-8').strip(), end='', file=log_file_name)
 
-        time.sleep(0.1)  # FIXME strange RE
-        res = process.poll()
+        cerr = str(process.communicate()[1], 'utf-8')
+        if cerr and cerr.endswith('\n'):
+            cerr = cerr[:-1]
+
+        res = process.returncode
+        write_log(('test ' + t.str_format + ': ').format(t.test_num), end='', file=log_file_name)
+
         if res == 0:
-            write_log('', file=log_file_name)
             ok_count += 1
+            write_log('{}'.format(cerr) if cerr else 'OK', file=log_file_name)
         else:
-            write_log(' [{}]'.format(res), file=log_file_name)
+            write_log('{} [{}]'.format(cerr, res), file=log_file_name)
 
         os.remove(pjoin('tmp', 'problem.out'))
 
@@ -258,7 +259,6 @@ def stress_test(args):
 
     while cur_test < n or n == -1:
         cur_test += 1
-        write_log('{:0>4d}: '.format(cur_test), end='', file=log_file_name)
 
         for suf in ['in', 'out', 'ans']:
             if os.path.exists(pjoin('tmp', 'problem.' + suf)):
@@ -269,19 +269,21 @@ def stress_test(args):
         if not res == 0:
             raise Exception('Generator error')
 
+        write_log('{:0>4d}: '.format(cur_test), end='', file=log_file_name)
+
         try:
             with open(pjoin('tmp', 'problem.in'), 'r') as inf, open(pjoin('tmp', 'problem.ans'), 'w') as ans:
                 res = subprocess.call(m_sol_ex.split(), stdin=inf, stdout=ans, timeout=mtl)
         except subprocess.TimeoutExpired:
             write_log('Time-limit error at model solution ({} s.)'.format(tl), file=log_file_name)
-            shutil.copy(pjoin('tmp', 'problem.in'), pjoin('stress_tests', '{:0>3d}'.format(cur_test)))
-            shutil.copy(pjoin('tmp', 'problem.ans'), pjoin('stress_tests', '{:0>3d}.a'.format(cur_test)))
+            shutil.copy(pjoin('tmp', 'problem.in'), pjoin('stress_tests', '{:0>4d}'.format(cur_test)))
+            shutil.copy(pjoin('tmp', 'problem.ans'), pjoin('stress_tests', '{:0>4d}.a'.format(cur_test)))
             continue
 
         if not res == 0:
             write_log('Run-time error at model solution [{}]'.format(res), file=log_file_name)
-            shutil.copy(pjoin('tmp', 'problem.in'), pjoin('stress_tests', '{:0>3d}'.format(cur_test)))
-            shutil.copy(pjoin('tmp', 'problem.ans'), pjoin('stress_tests', '{:0>3d}.a'.format(cur_test)))
+            shutil.copy(pjoin('tmp', 'problem.in'), pjoin('stress_tests', '{:0>4d}'.format(cur_test)))
+            shutil.copy(pjoin('tmp', 'problem.ans'), pjoin('stress_tests', '{:0>4d}.a'.format(cur_test)))
             continue
 
         try:
@@ -289,16 +291,16 @@ def stress_test(args):
                 res = subprocess.call(u_sol_ex.split(), stdin=inf, stdout=ans, timeout=tl)
         except subprocess.TimeoutExpired:
             write_log('Time-limit error ({} s.)'.format(tl), file=log_file_name)
-            shutil.copy(pjoin('tmp', 'problem.in'), pjoin('stress_tests', '{:0>3d}'.format(cur_test)))
-            shutil.copy(pjoin('tmp', 'problem.ans'), pjoin('stress_tests', '{:0>3d}.a'.format(cur_test)))
-            shutil.copy(pjoin('tmp', 'problem.out'), pjoin('stress_tests', '{:0>3d}.out'.format(cur_test)))
+            shutil.copy(pjoin('tmp', 'problem.in'), pjoin('stress_tests', '{:0>4d}'.format(cur_test)))
+            shutil.copy(pjoin('tmp', 'problem.ans'), pjoin('stress_tests', '{:0>4d}.a'.format(cur_test)))
+            shutil.copy(pjoin('tmp', 'problem.out'), pjoin('stress_tests', '{:0>4d}.out'.format(cur_test)))
             continue
 
         if not res == 0:
             write_log('Run-time error [{}]'.format(res), file=log_file_name)
-            shutil.copy(pjoin('tmp', 'problem.in'), pjoin('stress_tests', '{:0>3d}'.format(cur_test)))
-            shutil.copy(pjoin('tmp', 'problem.ans'), pjoin('stress_tests', '{:0>3d}.a'.format(cur_test)))
-            shutil.copy(pjoin('tmp', 'problem.out'), pjoin('stress_tests', '{:0>3d}.out'.format(cur_test)))
+            shutil.copy(pjoin('tmp', 'problem.in'), pjoin('stress_tests', '{:0>4d}'.format(cur_test)))
+            shutil.copy(pjoin('tmp', 'problem.ans'), pjoin('stress_tests', '{:0>4d}.a'.format(cur_test)))
+            shutil.copy(pjoin('tmp', 'problem.out'), pjoin('stress_tests', '{:0>4d}.out'.format(cur_test)))
             continue
 
         process = subprocess.Popen([check_ex,
@@ -306,19 +308,20 @@ def stress_test(args):
                                     pjoin('tmp', 'problem.out'),
                                     pjoin('tmp', 'problem.ans')],
                                    stderr=subprocess.PIPE)
-        for line in process.stderr:
-            write_log(str(line, 'utf-8').strip(), end='', file=log_file_name)
+        cerr = str(process.communicate()[1], 'utf-8')
+        if cerr and cerr.endswith('\n'):
+            cerr = cerr[:-1]
 
-        time.sleep(0.1)  # FIXME strange RE
-        res = process.poll()
+        res = process.returncode
+
         if res == 0:
-            write_log('', file=log_file_name)
             ok_count += 1
+            write_log('{}'.format(cerr) if cerr else 'OK', file=log_file_name)
         else:
-            write_log(' [{}]'.format(res), file=log_file_name)
-            shutil.copy(pjoin('tmp', 'problem.in'), pjoin('stress_tests', '{:0>3d}'.format(cur_test)))
-            shutil.copy(pjoin('tmp', 'problem.ans'), pjoin('stress_tests', '{:0>3d}.a'.format(cur_test)))
-            shutil.copy(pjoin('tmp', 'problem.out'), pjoin('stress_tests', '{:0>3d}.out'.format(cur_test)))
+            write_log('{} [{}]'.format(cerr, res), file=log_file_name)
+            shutil.copy(pjoin('tmp', 'problem.in'), pjoin('stress_tests', '{:0>4d}'.format(cur_test)))
+            shutil.copy(pjoin('tmp', 'problem.ans'), pjoin('stress_tests', '{:0>4d}.a'.format(cur_test)))
+            shutil.copy(pjoin('tmp', 'problem.out'), pjoin('stress_tests', '{:0>4d}.out'.format(cur_test)))
 
     write_log('passed {:d} from {:d}'.format(ok_count, n), end='\n\n', file=log_file_name)
 
