@@ -23,6 +23,11 @@ DEFAULT_ML = 512000
 DEFAULT_TEST_NUM_WIDTH = 2
 
 
+class CheckException(Exception):
+    def __init__(self, msg:str=''):
+        self.msg = msg
+
+
 class Test:
     """iterator that returns tests in specified folder"""
 
@@ -37,8 +42,8 @@ class Test:
     def exists(self):
         return os.path.exists(pjoin(self.folder, self.str_format.format(self.test_num)))
 
-    def test_num(self):
-        return self.test_num
+    def test_num_as_str(self):
+        return self.str_format.format(self.test_num)
 
     def inf_path(self):
         return pjoin(self.folder, self.str_format.format(self.test_num))
@@ -93,21 +98,26 @@ def validate_tests(args=None):
     ok_count = 0
 
     for t in Test.test_gen('tests'):
-        with t.open_inf() as inf:
-            process = subprocess.Popen(validator_ex, stdin=inf, stderr=subprocess.PIPE)
+        try:
+            with t.open_inf() as inf:
+                process = subprocess.Popen(validator_ex, stdin=inf, stderr=subprocess.PIPE)
 
-        cerr = str(process.communicate()[1], 'utf-8')
-        if cerr and cerr.endswith('\n'):
-            cerr = cerr[:-1]
+            cerr = str(process.communicate()[1], 'utf-8')
+            if cerr and cerr.endswith('\n'):
+                cerr = cerr[:-1]
 
-        res = process.returncode
-        write_log(('test ' + t.str_format + ': ').format(t.test_num), end='', file=log_file_name)
+            res = process.returncode
 
-        if res == 0:
-            ok_count += 1
-            write_log('OK ({})'.format(cerr) if cerr else 'OK', file=log_file_name)
+            if res != 0:
+                raise CheckException('{} [{}]'.format(cerr, res))
+
+        except CheckException as ce:
+            msg = ce.msg
         else:
-            write_log('{} [{}]'.format(cerr, res), file=log_file_name)
+            msg = 'OK ({})'.format(cerr) if cerr else 'OK'
+            ok_count += 1
+        finally:
+            write_log('test {0}: {1}'.format(t.test_num_as_str(), msg))
 
     write_log('correct {:d} from {:d}'.format(ok_count, Test.test_len('tests')), file=log_file_name)
     print('Validating complete\n')
@@ -176,7 +186,7 @@ def check_solution(args):
     check_ex = misc.compile_file(checker_path, 'checker', True)
 
     tl = args['tl'] or cfg.get_problem_param('tl', True) or DEFAULT_TL
-    tl = float(tl)  # because cfg.get_problem_param returns string or None
+    tl = float(tl)  # because cfg.get_problem_param() returns string or None
 
     if not os.path.exists(pjoin('tmp', 'log')):
         os.mkdir(pjoin('tmp', 'log'))
@@ -185,35 +195,39 @@ def check_solution(args):
 
     ok_count = 0
     for t in Test.test_gen('tests'):
-        write_log(('test ' + t.str_format + ': ').format(t.test_num), end='', file=log_file_name)
-
         try:
-            with t.open_inf('r') as inf, open(pjoin('tmp', 'problem.out'), 'w') as ouf:
-                res = subprocess.call(sol_ex.split(), stdin=inf, stdout=ouf, timeout=tl)
-        except subprocess.TimeoutExpired:
-            write_log('Time-limit error ({} s.)'.format(tl), file=log_file_name)
-            continue
+            try:
+                with t.open_inf('r') as inf, open(pjoin('tmp', 'problem.out'), 'w') as ouf:
+                    res = subprocess.call(sol_ex.split(), stdin=inf, stdout=ouf, timeout=tl)
+            except subprocess.TimeoutExpired:
+                raise CheckException('Time-limit error ({} s.)'.format(tl))
 
-        if not res == 0:
-            write_log('Run-time error [{}]'.format(res), file=log_file_name)
-            continue
+            if res != 0:
+                raise CheckException('Run-time error [{}]'.format(res))
 
-        process = subprocess.Popen([check_ex, t.inf_path(), pjoin('tmp', 'problem.out'), t.ans_path()],
-                                   stderr=subprocess.PIPE)
+            process = subprocess.Popen([check_ex, t.inf_path(), pjoin('tmp', 'problem.out'), t.ans_path()],
+                                       stderr=subprocess.PIPE)
 
-        cerr = str(process.communicate()[1], 'utf-8')
-        if cerr and cerr.endswith('\n'):
-            cerr = cerr[:-1]
+            cerr = str(process.communicate()[1], 'utf-8')
+            if cerr and cerr.endswith('\n'):
+                cerr = cerr[:-1]
 
-        res = process.returncode
+            res = process.returncode
 
-        if res == 0:
-            ok_count += 1
-            write_log('{}'.format(cerr) if cerr else 'OK', file=log_file_name)
+            if res != 0:
+                raise CheckException('{} [{}]'.format(cerr, res))
+
+            os.remove(pjoin('tmp', 'problem.out'))
+
+        except CheckException as ce:
+            msg = ce.msg
         else:
-            write_log('{} [{}]'.format(cerr, res), file=log_file_name)
-
-        os.remove(pjoin('tmp', 'problem.out'))
+            msg = '{}'.format(cerr) if cerr else 'OK'
+            ok_count += 1
+        finally:
+            if os.path.exists(pjoin('tmp', 'problem.out')):
+                os.remove(pjoin('tmp', 'problem.out'))
+            write_log('test {0}: {1}'.format(t.test_num_as_str(), msg))
 
     write_log('passed {:d} from {:d}'.format(ok_count, Test.test_len('tests')), end='\n\n', file=log_file_name)
 
