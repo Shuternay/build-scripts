@@ -285,64 +285,57 @@ def stress_test(args):
             if os.path.exists(pjoin('tmp', 'problem.' + suf)):
                 os.remove(pjoin('tmp', 'problem.' + suf))
 
-        res = os.system('{:s} 2 "{}" 1> {}'.format(gen_ex, random.randint(0, 10 ** 18),
-                                                   pjoin('tmp', 'problem.in')))
+        files = {'inf': pjoin('tmp', 'problem.in')}
+
+        res = os.system('{:s} 2 "{}" 1> {}'.format(gen_ex, random.randint(0, 10 ** 18), files['inf']))
         if not res == 0:
             raise Exception('Generator error')
 
-        write_log('{:0>4d}: '.format(cur_test), end='', file=log_file_name)
-
         try:
-            with open(pjoin('tmp', 'problem.in'), 'r') as inf, open(pjoin('tmp', 'problem.ans'), 'w') as ans:
-                res = subprocess.call(m_sol_ex.split(), stdin=inf, stdout=ans, timeout=mtl)
-        except subprocess.TimeoutExpired:
-            write_log('Time-limit error at model solution ({} s.)'.format(tl), file=log_file_name)
-            shutil.copy(pjoin('tmp', 'problem.in'), pjoin('stress_tests', '{:0>4d}'.format(cur_test)))
-            shutil.copy(pjoin('tmp', 'problem.ans'), pjoin('stress_tests', '{:0>4d}.a'.format(cur_test)))
-            continue
+            files['ans'] = pjoin('tmp', 'problem.ans')
+            try:
+                with open(files['inf'], 'r') as inf, open(files['ans'], 'w') as ans:
+                    res = subprocess.call(m_sol_ex.split(), stdin=inf, stdout=ans, timeout=mtl)
+            except subprocess.TimeoutExpired:
+                raise CheckException('Time-limit error at model solution ({} s.)'.format(mtl))
 
-        if not res == 0:
-            write_log('Run-time error at model solution [{}]'.format(res), file=log_file_name)
-            shutil.copy(pjoin('tmp', 'problem.in'), pjoin('stress_tests', '{:0>4d}'.format(cur_test)))
-            shutil.copy(pjoin('tmp', 'problem.ans'), pjoin('stress_tests', '{:0>4d}.a'.format(cur_test)))
-            continue
+            if res != 0:
+                raise CheckException('Run-time error at model solution [{}]'.format(res))
 
-        try:
-            with open(pjoin('tmp', 'problem.in'), 'r') as inf, open(pjoin('tmp', 'problem.out'), 'w') as ans:
-                res = subprocess.call(u_sol_ex.split(), stdin=inf, stdout=ans, timeout=tl)
-        except subprocess.TimeoutExpired:
-            write_log('Time-limit error ({} s.)'.format(tl), file=log_file_name)
-            shutil.copy(pjoin('tmp', 'problem.in'), pjoin('stress_tests', '{:0>4d}'.format(cur_test)))
-            shutil.copy(pjoin('tmp', 'problem.ans'), pjoin('stress_tests', '{:0>4d}.a'.format(cur_test)))
-            shutil.copy(pjoin('tmp', 'problem.out'), pjoin('stress_tests', '{:0>4d}.out'.format(cur_test)))
-            continue
+            files['out'] = pjoin('tmp', 'problem.out')
 
-        if not res == 0:
-            write_log('Run-time error [{}]'.format(res), file=log_file_name)
-            shutil.copy(pjoin('tmp', 'problem.in'), pjoin('stress_tests', '{:0>4d}'.format(cur_test)))
-            shutil.copy(pjoin('tmp', 'problem.ans'), pjoin('stress_tests', '{:0>4d}.a'.format(cur_test)))
-            shutil.copy(pjoin('tmp', 'problem.out'), pjoin('stress_tests', '{:0>4d}.out'.format(cur_test)))
-            continue
+            try:
+                with open(files['inf'], 'r') as inf, open(files['out'], 'w') as ans:
+                    res = subprocess.call(u_sol_ex.split(), stdin=inf, stdout=ans, timeout=tl)
+            except subprocess.TimeoutExpired:
+                raise CheckException('Time-limit error ({} s.)'.format(tl))
 
-        process = subprocess.Popen([check_ex,
-                                    pjoin('tmp', 'problem.in'),
-                                    pjoin('tmp', 'problem.out'),
-                                    pjoin('tmp', 'problem.ans')],
-                                   stderr=subprocess.PIPE)
-        cerr = str(process.communicate()[1], 'utf-8')
-        if cerr and cerr.endswith('\n'):
-            cerr = cerr[:-1]
+            if res != 0:
+                raise CheckException('Run-time error [{}]'.format(res))
 
-        res = process.returncode
+            process = subprocess.Popen([check_ex, files['inf'], files['out'], files['ans']],
+                                       stderr=subprocess.PIPE)
+            cerr = str(process.communicate()[1], 'utf-8')
+            if cerr and cerr.endswith('\n'):
+                cerr = cerr[:-1]
 
-        if res == 0:
-            ok_count += 1
-            write_log('{}'.format(cerr) if cerr else 'OK', file=log_file_name)
+            res = process.returncode
+
+            if res != 0:
+                raise CheckException('{} [{}]'.format(cerr, res))
+
+        except CheckException as ce:
+            msg = ce.msg
+            for name, suf in (('inf', ''), ('out', '.out'), ('ans', '.a')):
+                if name in files and os.path.exists(files[name]):
+                    shutil.copy2(files[name], pjoin('stress_tests', '{0:0>4d}{1}'.format(cur_test, suf)))
         else:
-            write_log('{} [{}]'.format(cerr, res), file=log_file_name)
-            shutil.copy(pjoin('tmp', 'problem.in'), pjoin('stress_tests', '{:0>4d}'.format(cur_test)))
-            shutil.copy(pjoin('tmp', 'problem.ans'), pjoin('stress_tests', '{:0>4d}.a'.format(cur_test)))
-            shutil.copy(pjoin('tmp', 'problem.out'), pjoin('stress_tests', '{:0>4d}.out'.format(cur_test)))
+            msg = '{}'.format(cerr) if cerr else 'OK'
+            ok_count += 1
+        finally:
+            for file in files.values():
+                os.remove(file)
+            write_log('test {0:0>4d}: {1}'.format(cur_test, msg))
 
     write_log('passed {:d} from {:d}'.format(ok_count, n), end='\n\n', file=log_file_name)
 
