@@ -408,9 +408,9 @@ def upload(args):
 
 
 def clean(args):
-    shutil.rmtree('tests')
-    shutil.rmtree('stress_tests')
-    shutil.rmtree('tmp')
+    for folder in ('tests', 'stress_tests', 'tmp'):
+        if os.path.exists(folder):
+            shutil.rmtree(folder)
 
 
 def add(args):
