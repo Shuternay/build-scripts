@@ -240,7 +240,7 @@ def check_all_solutions(args):
     results = []
     for sol in solutions:
         args.update({'solution': sol[1]})
-        results.append(args)
+        results.append(check_solution(args))
 
     for sol, res in zip(solutions, results):
         print('{} ({}): [{} / {}]'.format(sol[0], sol[1], res[0], res[1]))
