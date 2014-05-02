@@ -126,6 +126,11 @@ def validate_tests(args=None):
 
 
 def build_tests(args):
+    if cfg.has_problem_param('use_doall'):
+        print('using doall script for tests building\n')
+        os.system(cfg.get_problem_param('doall_cmd', True) or 'sh doall.sh')
+        return
+
     main_solution = args['main_solution'] or cfg.get_main_solution()
 
     gen_path = cfg.get_problem_param('gen', True) or 'gen.cpp'
@@ -408,6 +413,11 @@ def upload(args):
 
 
 def clean(args):
+    if cfg.has_problem_param('use_wipe'):
+        print('using wipe script for cleaning\n')
+        os.system(cfg.get_problem_param('wipe cmd', True) or 'sh wipe.sh')
+        return
+
     for folder in ('tests', 'stress_tests', 'tmp'):
         if os.path.exists(folder):
             shutil.rmtree(folder)

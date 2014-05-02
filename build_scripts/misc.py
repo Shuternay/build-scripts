@@ -101,7 +101,7 @@ def write_log(s: str, end='\n', file='', out=None, write_to_stdout=True, write_t
 class Config:
     def __init__(self):
         if os.path.exists('problem.conf'):
-            self.problem_cfg = configparser.ConfigParser()
+            self.problem_cfg = configparser.ConfigParser(allow_no_value=True)
             self.problem_cfg.read('problem.conf')
 
         if get_contest_root():
@@ -121,6 +121,9 @@ class Config:
             return self.problem_cfg['general'].get(param, None)
         else:  # crash on Key Error
             return self.problem_cfg['general'].get(param)
+
+    def has_problem_param(self, param):
+        return param in self.problem_cfg['general']
 
     def get_contest_host(self):
         return self.contest_cfg['default']['contest_host']
