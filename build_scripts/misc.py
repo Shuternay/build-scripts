@@ -8,6 +8,30 @@ __author__ = 'ksg'
 pjoin = os.path.join
 
 
+def get_hash(file, info=''):
+    with open(file) as f:
+        content = info + '-----' + f.read()
+        m = hashlib.md5()
+        m.update(content.encode('utf-8'))
+        return m.hexdigest()
+
+
+def check_hash(file, info=''):
+    cur_hash = get_hash(file, info)
+    prev_hash = ''
+    if os.path.exists(pjoin('tmp', os.path.basename(file) + '.hash')):
+        with open(pjoin('tmp', os.path.basename(file) + '.hash')) as f:
+            prev_hash = f.read()
+
+    return prev_hash == cur_hash
+
+
+def write_hash(file, info=''):
+    cur_hash = get_hash(file, info)
+    with open(pjoin('tmp', os.path.basename(file) + '.hash'), 'w') as f:
+        f.write(cur_hash)
+
+
 def compile_file(file: str, target='', use_testlib=False, flags=''):
     print('Compiling {:s} (from {:s})...'.format(target, file))
 
@@ -17,18 +41,7 @@ def compile_file(file: str, target='', use_testlib=False, flags=''):
 
         out = pjoin('tmp', os.path.basename(file) + '.out')
 
-        with open(file) as f:
-            cont = f.read()
-            m = hashlib.md5()
-            m.update(cont.encode('utf-8'))
-            cur_hash = m.hexdigest()
-
-        prev_hash = ''
-        if os.path.exists(pjoin('tmp', os.path.basename(file) + '.hash')):
-            with open(pjoin('tmp', os.path.basename(file) + '.hash')) as f:
-                prev_hash = f.read()
-
-        if prev_hash == cur_hash:
+        if check_hash(file):
             print('Using previous version of binary\n')
             return out  # TODO check for preprocessor and compiler flags
 
@@ -41,9 +54,9 @@ def compile_file(file: str, target='', use_testlib=False, flags=''):
         if not res == 0:
             raise Exception('Compilation error ({})'.format(file))
 
-        with open(pjoin('tmp', os.path.basename(file) + '.hash'), 'w') as f:
-            f.write(cur_hash)
+        write_hash(file)
 
+        print()
         return out
 
     if file.endswith('.java'):
@@ -55,18 +68,7 @@ def compile_file(file: str, target='', use_testlib=False, flags=''):
 
         out = 'java -cp {0} -Xmx256M -Xss64M {1}'.format(out_folder, os.path.basename(file[:-len('.java')]))
 
-        with open(file) as f:
-            cont = f.read()
-            m = hashlib.md5()
-            m.update(cont.encode('utf-8'))
-            cur_hash = m.hexdigest()
-
-        prev_hash = ''
-        if os.path.exists(pjoin('tmp', os.path.basename(file) + '.hash')):
-            with open(pjoin('tmp', os.path.basename(file) + '.hash')) as f:
-                prev_hash = f.read()
-
-        if prev_hash == cur_hash:
+        if check_hash(file):
             print('Using previous version of binary\n')
             return out  # TODO check for preprocessor and compiler flags
 
@@ -76,9 +78,9 @@ def compile_file(file: str, target='', use_testlib=False, flags=''):
         if not res == 0:
             raise Exception('Compilation error ({})'.format(file))
 
-        with open(pjoin('tmp', os.path.basename(file) + '.hash'), 'w') as f:
-            f.write(cur_hash)
+        write_hash(file)
 
+        print()
         return out
 
     if file.endswith('.py'):
