@@ -9,8 +9,6 @@ pjoin = os.path.join
 
 
 def compile_file(file: str, target='', use_testlib=False, flags=''):
-    # TODO java compilation
-
     print('Compiling {:s} (from {:s})...'.format(target, file))
 
     if file.endswith('.c') or file.endswith('.cpp'):  # C or C++
@@ -51,8 +49,11 @@ def compile_file(file: str, target='', use_testlib=False, flags=''):
     if file.endswith('.java'):
         if not os.path.exists('tmp'):
             os.mkdir('tmp')
+        out_folder = pjoin('tmp', os.path.basename(file[:-len('.java')]))
+        if not os.path.exists(out_folder):
+            os.mkdir(out_folder)
 
-        out = 'java -cp tmp -Xmx256M -Xss64M {}'.format(os.path.basename(file[:-len('.java')]))
+        out = 'java -cp {0} -Xmx256M -Xss64M {1}'.format(out_folder, os.path.basename(file[:-len('.java')]))
 
         with open(file) as f:
             cont = f.read()
@@ -69,8 +70,8 @@ def compile_file(file: str, target='', use_testlib=False, flags=''):
             print('Using previous version of binary\n')
             return out  # TODO check for preprocessor and compiler flags
 
-        java_compiler = 'javac {}'.format(flags)  # TODO java testlib
-        res = os.system('{:s} "{:s}" -d {:s}'.format(java_compiler, file, 'tmp'))
+        java_compiler = 'javac {0}'.format(flags)  # TODO java testlib
+        res = os.system('{0:s} "{1:s}" -d {2:s}'.format(java_compiler, file, out_folder))
 
         if not res == 0:
             raise Exception('Compilation error ({})'.format(file))
