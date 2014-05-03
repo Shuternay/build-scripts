@@ -32,7 +32,7 @@ def write_hash(file, info=''):
         f.write(cur_hash)
 
 
-def compile_file(file: str, target='', use_testlib=False, flags=''):
+def compile_file(file: str, target='', use_testlib=False, flags='', ml=None):
     print('Compiling {:s} (from {:s})...'.format(target, file))
 
     if file.endswith('.c') or file.endswith('.cpp'):  # C or C++
@@ -66,7 +66,9 @@ def compile_file(file: str, target='', use_testlib=False, flags=''):
         if not os.path.exists(out_folder):
             os.mkdir(out_folder)
 
-        out = 'java -cp {0} -Xmx256M -Xss64M {1}'.format(out_folder, os.path.basename(file[:-len('.java')]))
+        ml = int(ml or 512)
+        out = 'java -cp {0} -Xmx{2}M -Xss{3}M {1}'.format(out_folder, os.path.basename(file[:-len('.java')]),
+                                                          ml, ml // 2)
 
         if check_hash(file):
             print('Using previous version of binary\n')
