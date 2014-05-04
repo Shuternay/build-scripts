@@ -148,6 +148,10 @@ def validate_tests(args=None):
             if res != 0:
                 raise CheckException('{} [{}]'.format(cerr, res))
 
+        except KeyboardInterrupt:
+            msg = 'Interrupted'
+            break
+
         except CheckException as ce:
             msg = ce.msg
         else:
@@ -265,6 +269,11 @@ def check_solution(args):
 
             os.remove(pjoin('tmp', 'problem.out'))
 
+        except KeyboardInterrupt:
+            time = 0
+            msg = 'Interrupted'
+            break
+
         except CheckException as ce:
             msg = ce.msg
         else:
@@ -373,6 +382,11 @@ def stress_test(args):
             if res != 0:
                 raise CheckException('{} [{}]'.format(cerr, res))
 
+        except KeyboardInterrupt:
+            m_time = u_time = 0
+            msg = 'Interrupted'
+            break
+
         except CheckException as ce:
             msg = ce.msg
             for name, suf in (('inf', ''), ('out', '.out'), ('ans', '.a')):
@@ -384,7 +398,7 @@ def stress_test(args):
         finally:
             for file in files.values():
                 os.remove(file)
-            write_log('test {0:0>4d}: m_time = {2:.2f}, u_time = {3:.2f} {1}'.format(cur_test, msg, m_time, u_time))
+            write_log('test {0:0>4d}: m_time = {2:.2f}, u_time = {3:.2f}, {1}'.format(cur_test, msg, m_time, u_time))
 
     write_log('passed {:d} from {:d}'.format(ok_count, n), end='\n\n', file=log_file_name)
 
