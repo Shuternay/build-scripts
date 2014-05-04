@@ -24,21 +24,45 @@ DEFAULT_TEST_NUM_WIDTH = 2
 
 
 class CheckException(Exception):
-    def __init__(self, msg:str=''):
+    def __init__(self, msg: str=''):
         self.msg = msg
 
 
-def get_limit_func(ml, file_name):
-    if file_name.endswith('.java'):
+def get_limit_func(ml: int, exc: str):
+    if exc.startswith('java'):
         return None
     try:
         import resource  # works only for Unix
 
+        if ml != -1:
+            ml *= 1024 ** 2
         hard_limit = resource.getrlimit(resource.RLIMIT_AS)[1]
-        return lambda: resource.setrlimit(resource.RLIMIT_AS, (ml * 10 ** 6, hard_limit))
+        return lambda: resource.setrlimit(resource.RLIMIT_AS, (ml, hard_limit))
     except ImportError:
         resource = None  # strange diagnostic
         return None
+
+
+def run_solution(exc, stdin=None, stdout=None, stderr=None, tl=None, ml=-1):
+    try:
+        import resource  # works only for Unix
+
+        start_res = resource.getrusage(resource.RUSAGE_CHILDREN)
+    except ImportError:
+        resource = None
+        start_res = None
+
+    # can raise subprocess.TimeoutExpired exception
+    res = subprocess.call(exc.split(), stdin=stdin, stdout=stdout, stderr=stderr,
+                          timeout=tl, preexec_fn=get_limit_func(ml, exc))
+
+    if resource and start_res:
+        end_res = resource.getrusage(resource.RUSAGE_CHILDREN)
+        time = end_res.ru_utime - start_res.ru_utime
+    else:
+        time = None
+
+    return res, time
 
 
 class Test:
@@ -151,7 +175,7 @@ def build_tests(args):
     gen_ex = misc.compile_file(gen_path, 'gen', True)
 
     ml = args['ml'] or cfg.get_problem_param('ml', True) or DEFAULT_ML
-    ml = float(ml)  # because cfg.get_problem_param() returns string or None
+    ml = int(ml)  # because cfg.get_problem_param() returns string or None
 
     if not os.path.exists(pjoin('tmp', 'log')):
         os.mkdir(pjoin('tmp', 'log'))
@@ -176,17 +200,13 @@ def build_tests(args):
         write_log(('test ' + t.str_format + ': ').format(t.test_num), end="", file=log_file_name)
 
         with t.open_inf('r') as inf, t.open_ans('w') as ans:
-            res = subprocess.call(
-                solution_ex.split(),
-                stdin=inf,
-                stdout=ans,
-                preexec_fn=get_limit_func(ml, main_solution))
+            res, time = run_solution(solution_ex, stdin=inf, stdout=ans, ml=ml)
 
         if not res == 0:
             write_log("Run-time error [{}]".format(res), file=log_file_name)
             continue
         else:
-            write_log("Generated", file=log_file_name)
+            write_log("Generated, time = {0:.2f}".format(time), file=log_file_name)
 
     if cfg.get_problem_param('samples_num', True):
         samples_num = int(cfg.get_problem_param('samples_num'))
@@ -204,7 +224,7 @@ def check_solution(args):
     tl = float(tl)  # because cfg.get_problem_param() returns string or None
 
     ml = args['ml'] or cfg.get_problem_param('ml', True) or DEFAULT_ML
-    ml = float(ml)  # because cfg.get_problem_param() returns string or None
+    ml = int(ml)  # because cfg.get_problem_param() returns string or None
 
     solution = args['solution'] or cfg.get_main_solution()
     sol_ex = misc.compile_file(solution, 'solution', ml=ml)
@@ -212,7 +232,6 @@ def check_solution(args):
     checker_path = cfg.get_problem_param('checker', True) or 'checker.cpp'
     checker_path = os.path.normpath(checker_path)
     check_ex = misc.compile_file(checker_path, 'checker', True)
-
 
     if not os.path.exists(pjoin('tmp', 'log')):
         os.mkdir(pjoin('tmp', 'log'))
@@ -224,9 +243,9 @@ def check_solution(args):
         try:
             try:
                 with t.open_inf('r') as inf, open(pjoin('tmp', 'problem.out'), 'w') as ouf:
-                    res = subprocess.call(sol_ex.split(), stdin=inf, stdout=ouf, timeout=tl,
-                                          preexec_fn=get_limit_func(ml, solution))
+                    res, time = run_solution(sol_ex, stdin=inf, stdout=ouf, tl=tl, ml=ml)
             except subprocess.TimeoutExpired:
+                time = 0
                 raise CheckException('Time-limit error ({} s.)'.format(tl))
 
             if res != 0:
@@ -254,7 +273,7 @@ def check_solution(args):
         finally:
             if os.path.exists(pjoin('tmp', 'problem.out')):
                 os.remove(pjoin('tmp', 'problem.out'))
-            write_log('test {0}: {1}'.format(t.test_num_as_str(), msg))
+            write_log('test {0}: time = {2:.2f}, {1}'.format(t.test_num_as_str(), msg, time))
 
     write_log('passed {:d} from {:d}'.format(ok_count, Test.test_len('tests')), end='\n\n', file=log_file_name)
 
@@ -279,7 +298,7 @@ def stress_test(args):
     tl = float(tl)  # because cfg.get_problem_param returns string or None
 
     ml = args['ml'] or cfg.get_problem_param('ml', True) or DEFAULT_ML
-    ml = float(ml)  # because cfg.get_problem_param() returns string or None
+    ml = int(ml)  # because cfg.get_problem_param() returns string or None
 
     model_solution_path = args['model_solution'] or cfg.get_main_solution()
     user_solution_path = args['solution']
@@ -291,7 +310,7 @@ def stress_test(args):
     checker_path = os.path.normpath(checker_path)
 
     gen_ex = misc.compile_file(gen_path, 'gen', True)
-    check_ex = misc.compile_file(checker_path, 'check', True)
+    check_ex = misc.compile_file(checker_path, 'checker', True)
     m_sol_ex = misc.compile_file(model_solution_path, 'model_solution', ml=ml)
     u_sol_ex = misc.compile_file(user_solution_path, 'user_solution', ml=ml)
 
@@ -325,8 +344,7 @@ def stress_test(args):
             files['ans'] = pjoin('tmp', 'problem.ans')
             try:
                 with open(files['inf'], 'r') as inf, open(files['ans'], 'w') as ans:
-                    res = subprocess.call(m_sol_ex.split(), stdin=inf, stdout=ans, timeout=mtl,
-                                          preexec_fn=get_limit_func(ml, model_solution_path))
+                    res, m_time = run_solution(m_sol_ex, stdin=inf, stdout=ans, tl=mtl, ml=ml)
             except subprocess.TimeoutExpired:
                 raise CheckException('Time-limit error at model solution ({} s.)'.format(mtl))
 
@@ -337,8 +355,7 @@ def stress_test(args):
 
             try:
                 with open(files['inf'], 'r') as inf, open(files['out'], 'w') as ans:
-                    res = subprocess.call(u_sol_ex.split(), stdin=inf, stdout=ans, timeout=tl,
-                                          preexec_fn=get_limit_func(ml, user_solution_path))
+                    res, u_time = run_solution(u_sol_ex, stdin=inf, stdout=ans, tl=tl, ml=ml)
             except subprocess.TimeoutExpired:
                 raise CheckException('Time-limit error ({} s.)'.format(tl))
 
@@ -367,7 +384,7 @@ def stress_test(args):
         finally:
             for file in files.values():
                 os.remove(file)
-            write_log('test {0:0>4d}: {1}'.format(cur_test, msg))
+            write_log('test {0:0>4d}: m_time = {2:.2f}, u_time = {3:.2f} {1}'.format(cur_test, msg, m_time, u_time))
 
     write_log('passed {:d} from {:d}'.format(ok_count, n), end='\n\n', file=log_file_name)
 
@@ -552,7 +569,7 @@ def main():
     parser_stress.add_argument('-n', '--num', type=int, help='number of tests')
     parser_stress.add_argument('--mtl', type=float, help='Time limit for model solution')
     parser_stress.add_argument('--tl', type=float, help='Time limit for user solution')
-    parser_stress.add_argument('--ml', type=float, help='Memory limit for user solution')
+    parser_stress.add_argument('--ml', type=int, help='Memory limit for solutions')
     parser_stress.set_defaults(func=stress_test)
 
     # (build_st) build statement.xml
