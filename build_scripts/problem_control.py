@@ -1,18 +1,19 @@
 #!/usr/bin/python3.3
 import argparse
 import datetime
+import ftplib
+import netrc
 import os
 import pkgutil
 import random
 import shutil
 import stat
 import subprocess
-import ftplib
-import netrc
 
 from build_scripts import tex2xml
 from build_scripts import misc
 from build_scripts.misc import write_log
+from build_scripts.misc import Executable
 
 
 pjoin = os.path.join
@@ -26,43 +27,6 @@ DEFAULT_TEST_NUM_WIDTH = 2
 class CheckException(Exception):
     def __init__(self, msg: str=''):
         self.msg = msg
-
-
-def get_limit_func(ml: int, exc: str):
-    if exc.startswith('java'):
-        return None
-    try:
-        import resource  # works only for Unix
-
-        if ml != -1:
-            ml *= 1024 ** 2
-        hard_limit = resource.getrlimit(resource.RLIMIT_AS)[1]
-        return lambda: resource.setrlimit(resource.RLIMIT_AS, (ml, hard_limit))
-    except ImportError:
-        resource = None  # strange diagnostic
-        return None
-
-
-def run_solution(exc, stdin=None, stdout=None, stderr=None, tl=None, ml=-1):
-    try:
-        import resource  # works only for Unix
-
-        start_res = resource.getrusage(resource.RUSAGE_CHILDREN)
-    except ImportError:
-        resource = None
-        start_res = None
-
-    # can raise subprocess.TimeoutExpired exception
-    res = subprocess.call(exc.split(), stdin=stdin, stdout=stdout, stderr=stderr,
-                          timeout=tl, preexec_fn=get_limit_func(ml, exc))
-
-    if resource and start_res:
-        end_res = resource.getrusage(resource.RUSAGE_CHILDREN)
-        time = end_res.ru_utime - start_res.ru_utime
-    else:
-        time = None
-
-    return res, time
 
 
 class Test:
@@ -125,7 +89,7 @@ def validate_tests(args=None):
     validator_path = cfg.get_problem_param('validator', True) or 'validator.cpp'
     validator_path = os.path.normpath(validator_path)
 
-    validator_ex = misc.compile_file(validator_path, 'validator', True)
+    validator_ex = Executable(validator_path, 'validator', True)
 
     if not os.path.exists(pjoin('tmp', 'log')):
         os.mkdir(pjoin('tmp', 'log'))
@@ -137,16 +101,10 @@ def validate_tests(args=None):
     for t in Test.test_gen('tests'):
         try:
             with t.open_inf() as inf:
-                process = subprocess.Popen(validator_ex, stdin=inf, stderr=subprocess.PIPE)
+                res = validator_ex.execute(stdin=inf, stderr=subprocess.PIPE)
 
-            cerr = str(process.communicate()[1], 'utf-8')
-            if cerr and cerr.endswith('\n'):
-                cerr = cerr[:-1]
-
-            res = process.returncode
-
-            if res != 0:
-                raise CheckException('{} [{}]'.format(cerr, res))
+            if res.returncode != 0:
+                raise CheckException('{} [{}]'.format(res.stderr, res.returncode))
 
         except KeyboardInterrupt:
             msg = 'Interrupted'
@@ -155,7 +113,7 @@ def validate_tests(args=None):
         except CheckException as ce:
             msg = ce.msg
         else:
-            msg = 'OK ({})'.format(cerr) if cerr else 'OK'
+            msg = 'OK ({})'.format(res.stderr) if res.stderr else 'OK'
             ok_count += 1
         finally:
             write_log('test {0}: {1}'.format(t.test_num_as_str(), msg))
@@ -172,14 +130,15 @@ def build_tests(args):
         os.system(cfg.get_problem_param('doall_cmd', True) or 'sh doall.sh')
         return
 
-    main_solution = args['main_solution'] or cfg.get_main_solution()
-
     gen_path = cfg.get_problem_param('gen', True) or 'gen.cpp'
     gen_path = os.path.normpath(gen_path)
-    gen_ex = misc.compile_file(gen_path, 'gen', True)
+    gen_ex = Executable(gen_path, 'gen', True)
 
     ml = args['ml'] or cfg.get_problem_param('ml', True) or DEFAULT_ML
     ml = int(ml)  # because cfg.get_problem_param() returns string or None
+
+    main_solution = args['main_solution'] or cfg.get_main_solution()
+    solution_ex = Executable(main_solution, 'main_solution', ml=ml)
 
     if not os.path.exists(pjoin('tmp', 'log')):
         os.mkdir(pjoin('tmp', 'log'))
@@ -190,13 +149,13 @@ def build_tests(args):
         shutil.rmtree('tests')
     os.mkdir('tests')
 
-    res = os.system('{:s} 0'.format(gen_ex))
-    if not res == 0:
+    res = gen_ex.execute(args='0')
+    if res.returncode != 0:
         raise Exception('Generator error')
 
     validate_tests()
 
-    solution_ex = misc.compile_file(main_solution, 'main_solution', ml=ml)
+    solution_ex.finish_compilation()
 
     write_log('\nGenerating answers...', file=log_file_name)
 
@@ -204,13 +163,13 @@ def build_tests(args):
         write_log(('test ' + t.str_format + ': ').format(t.test_num), end="", file=log_file_name)
 
         with t.open_inf('r') as inf, t.open_ans('w') as ans:
-            res, time = run_solution(solution_ex, stdin=inf, stdout=ans, ml=ml)
+            res = solution_ex.execute(stdin=inf, stdout=ans)
 
-        if not res == 0:
-            write_log("Run-time error [{}]".format(res), file=log_file_name)
+        if not res.returncode == 0:
+            write_log("Run-time error [{}]".format(res.returncode), file=log_file_name)
             continue
         else:
-            write_log("Generated, time = {0:.2f}".format(time), file=log_file_name)
+            write_log("Generated, time = {0:.2f}".format(res.exec_time), file=log_file_name)
 
     if cfg.get_problem_param('samples_num', True):
         samples_num = int(cfg.get_problem_param('samples_num'))
@@ -231,11 +190,14 @@ def check_solution(args):
     ml = int(ml)  # because cfg.get_problem_param() returns string or None
 
     solution = args['solution'] or cfg.get_main_solution()
-    sol_ex = misc.compile_file(solution, 'solution', ml=ml)
+    sol_ex = Executable(solution, 'solution', ml=ml)
 
     checker_path = cfg.get_problem_param('checker', True) or 'checker.cpp'
     checker_path = os.path.normpath(checker_path)
-    check_ex = misc.compile_file(checker_path, 'checker', True)
+    check_ex = Executable(checker_path, 'checker', True)
+
+    sol_ex.finish_compilation()
+    check_ex.finish_compilation()
 
     if not os.path.exists(pjoin('tmp', 'log')):
         os.mkdir(pjoin('tmp', 'log'))
@@ -245,39 +207,33 @@ def check_solution(args):
     ok_count = 0
     for t in Test.test_gen('tests'):
         try:
+            time = 0
             try:
                 with t.open_inf('r') as inf, open(pjoin('tmp', 'problem.out'), 'w') as ouf:
-                    res, time = run_solution(sol_ex, stdin=inf, stdout=ouf, tl=tl, ml=ml)
+                    res = sol_ex.execute(stdin=inf, stdout=ouf, tl=tl)
+                    time = res.exec_time
             except subprocess.TimeoutExpired:
-                time = 0
                 raise CheckException('Time-limit error ({} s.)'.format(tl))
 
-            if res != 0:
-                raise CheckException('Run-time error [{}]'.format(res))
+            if res.returncode != 0:
+                raise CheckException('Run-time error [{}]'.format(res.returncode))
 
-            process = subprocess.Popen([check_ex, t.inf_path(), pjoin('tmp', 'problem.out'), t.ans_path()],
-                                       stderr=subprocess.PIPE)
+            res = check_ex.execute(args=' '.join((t.inf_path(), pjoin('tmp', 'problem.out'), t.ans_path())),
+                                   stderr=subprocess.PIPE)
 
-            cerr = str(process.communicate()[1], 'utf-8')
-            if cerr and cerr.endswith('\n'):
-                cerr = cerr[:-1]
-
-            res = process.returncode
-
-            if res != 0:
-                raise CheckException('{} [{}]'.format(cerr, res))
+            if res.returncode != 0:
+                raise CheckException('{} [{}]'.format(res.stderr, res.returncode))
 
             os.remove(pjoin('tmp', 'problem.out'))
 
         except KeyboardInterrupt:
-            time = 0
             msg = 'Interrupted'
             break
 
         except CheckException as ce:
             msg = ce.msg
         else:
-            msg = '{}'.format(cerr) if cerr else 'OK'
+            msg = '{}'.format(res.stderr) if res.stderr else 'OK'
             ok_count += 1
         finally:
             if os.path.exists(pjoin('tmp', 'problem.out')):
@@ -318,10 +274,15 @@ def stress_test(args):
     checker_path = cfg.get_problem_param('checker', True) or 'checker.cpp'
     checker_path = os.path.normpath(checker_path)
 
-    gen_ex = misc.compile_file(gen_path, 'gen', True)
-    check_ex = misc.compile_file(checker_path, 'checker', True)
-    m_sol_ex = misc.compile_file(model_solution_path, 'model_solution', ml=ml)
-    u_sol_ex = misc.compile_file(user_solution_path, 'user_solution', ml=ml)
+    gen_ex = Executable(gen_path, 'gen', True)
+    check_ex = Executable(checker_path, 'checker', True)
+    m_sol_ex = Executable(model_solution_path, 'model_solution', ml=ml)
+    u_sol_ex = Executable(user_solution_path, 'user_solution', ml=ml)
+
+    gen_ex.finish_compilation()
+    check_ex.finish_compilation()
+    m_sol_ex.finish_compilation()
+    u_sol_ex.finish_compilation()
 
     if os.path.exists('stress_tests'):
         shutil.rmtree('stress_tests')
@@ -345,45 +306,43 @@ def stress_test(args):
 
         files = {'inf': pjoin('tmp', 'problem.in')}
 
-        res = os.system('{:s} 2 "{}" 1> {}'.format(gen_ex, random.randint(0, 10 ** 18), files['inf']))
-        if not res == 0:
+        with open(files['inf'], 'w') as inf:
+            res = gen_ex.execute(args='2 "{}"'.format(random.randint(0, 10 ** 18)), stdout=inf)
+        if not res.returncode == 0:
             raise Exception('Generator error')
 
         try:
             files['ans'] = pjoin('tmp', 'problem.ans')
+            m_time = u_time = 0
             try:
                 with open(files['inf'], 'r') as inf, open(files['ans'], 'w') as ans:
-                    res, m_time = run_solution(m_sol_ex, stdin=inf, stdout=ans, tl=mtl, ml=ml)
+                    res = m_sol_ex.execute(stdin=inf, stdout=ans, tl=mtl)
+                    m_time = res.exec_time
             except subprocess.TimeoutExpired:
                 raise CheckException('Time-limit error at model solution ({} s.)'.format(mtl))
 
-            if res != 0:
-                raise CheckException('Run-time error at model solution [{}]'.format(res))
+            if res.returncode != 0:
+                raise CheckException('Run-time error at model solution [{}]'.format(res.returncode))
 
             files['out'] = pjoin('tmp', 'problem.out')
 
             try:
                 with open(files['inf'], 'r') as inf, open(files['out'], 'w') as ans:
-                    res, u_time = run_solution(u_sol_ex, stdin=inf, stdout=ans, tl=tl, ml=ml)
+                    res = u_sol_ex.execute(stdin=inf, stdout=ans, tl=tl)
+                    u_time = res.exec_time
             except subprocess.TimeoutExpired:
                 raise CheckException('Time-limit error ({} s.)'.format(tl))
 
-            if res != 0:
-                raise CheckException('Run-time error [{}]'.format(res))
+            if res.returncode != 0:
+                raise CheckException('Run-time error [{}]'.format(res.returncode))
 
-            process = subprocess.Popen([check_ex, files['inf'], files['out'], files['ans']],
-                                       stderr=subprocess.PIPE)
-            cerr = str(process.communicate()[1], 'utf-8')
-            if cerr and cerr.endswith('\n'):
-                cerr = cerr[:-1]
+            res = check_ex.execute(args=' '.join([files['inf'], files['out'], files['ans']]),
+                                   stderr=subprocess.PIPE)
 
-            res = process.returncode
-
-            if res != 0:
-                raise CheckException('{} [{}]'.format(cerr, res))
+            if res.returncode != 0:
+                raise CheckException('{} [{}]'.format(res.stderr, res.returncode))
 
         except KeyboardInterrupt:
-            m_time = u_time = 0
             msg = 'Interrupted'
             break
 
@@ -393,7 +352,7 @@ def stress_test(args):
                 if name in files and os.path.exists(files[name]):
                     shutil.copy2(files[name], pjoin('stress_tests', '{0:0>4d}{1}'.format(cur_test, suf)))
         else:
-            msg = '{}'.format(cerr) if cerr else 'OK'
+            msg = '{}'.format(res.stderr) if res.stderr else 'OK'
             ok_count += 1
         finally:
             for file in files.values():
