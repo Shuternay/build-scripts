@@ -48,6 +48,21 @@ class Executable:
         self.compile_process = subprocess.Popen('{0} "{1}" -o {2}'.format(cxx_compiler, self.src_path, exec_out),
                                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 
+    def compile_delphi(self):
+        if not os.path.exists('tmp'):
+            os.mkdir('tmp')
+
+        exec_out = self.exec_cmd = pjoin('tmp', os.path.basename(self.src_path) + '.out')
+
+        if self.use_precompiled and Executable.check_hash(self.src_path):
+            print('Using previous version of binary\n')
+            self.compiled = True
+            return  # TODO check for preprocessor and compiler flags
+
+        pas_compiler = 'fpc -MDELPHI {0} '.format(self.flags)  # TODO java testlib
+        self.compile_process = subprocess.Popen('{0} "{1}" -o{2}'.format(pas_compiler, self.src_path, exec_out),
+                                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+
     def compile_java(self):
         if not os.path.exists('tmp'):
             os.mkdir('tmp')
@@ -69,6 +84,21 @@ class Executable:
         self.compile_process = subprocess.Popen('{0} "{1}" -d {2}'.format(java_compiler, self.src_path, out_folder),
                                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 
+    def compile_pascal(self):
+        if not os.path.exists('tmp'):
+            os.mkdir('tmp')
+
+        exec_out = self.exec_cmd = pjoin('tmp', os.path.basename(self.src_path) + '.out')
+
+        if self.use_precompiled and Executable.check_hash(self.src_path):
+            print('Using previous version of binary\n')
+            self.compiled = True
+            return  # TODO check for preprocessor and compiler flags
+
+        pas_compiler = 'fpc {0} '.format(self.flags)  # TODO java testlib
+        self.compile_process = subprocess.Popen('{0} "{1}" -o{2}'.format(pas_compiler, self.src_path, exec_out),
+                                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+
     def compile_python3(self):
         if os.system('python3 -V') == 0:  # command 'python3' doesn't exists on Windows
             self.exec_cmd = 'python3 ' + self.src_path
@@ -86,7 +116,9 @@ class Executable:
         lang_to_comp = {
             'C': self.compile_cpp,
             'C++': self.compile_cpp,
+            'Delphi': self.compile_delphi,
             'Java': self.compile_java,
+            'Pascal': self.compile_pascal,
             'Python': self.compile_python3,
             'Python3': self.compile_python3,
             'Shell': self.compile_shell,
@@ -168,9 +200,11 @@ class Executable:
         suffix2lang = [
             ('.c', 'C'),
             ('.cpp', 'C++'),
+            ('.dpr', 'Delphi'),
             ('.java', 'Java'),
+            ('.pas', 'Pascal'),
             ('.py', 'Python3'),
-            ('.sh', 'Shell')
+            ('.sh', 'Shell'),
         ]
         for suffix, lang in suffix2lang:
             if src_path.endswith(suffix):

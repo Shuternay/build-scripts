@@ -31,6 +31,30 @@ class TestExecutable(TestCase):
         src_file.flush()
         return src_file
 
+    def test_delphi_support(self):
+        src_name = 'delphi_full.dpr'
+        with self.unpack_src(src_name) as src_file:
+            executable = Executable(src_file.name, src_name, lang='Delphi',
+                                    use_precompiled=False, save_compiled=False)
+
+            exec_res = executable.execute(stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        self.assertEqual(exec_res.stdout, 'stdout example')
+        self.assertEqual(exec_res.stderr, 'stderr example')
+        # self.assertEqual(exec_res.returncode, 4)  # I don't know, how to set in Pascal/Delphi
+
+    def test_pascal_support(self):
+        src_name = 'pascal_full.pas'
+        with self.unpack_src(src_name) as src_file:
+            executable = Executable(src_file.name, src_name, lang='Pascal',
+                                    use_precompiled=False, save_compiled=False)
+
+            exec_res = executable.execute(stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        self.assertEqual(exec_res.stdout, 'stdout example')
+        self.assertEqual(exec_res.stderr, 'stderr example')
+        # self.assertEqual(exec_res.returncode, 4)  # I don't know, how to set in Pascal/Delphi
+
     def test_python_support(self):
         src_name = 'python3_full.py'
         with self.unpack_src(src_name) as src_file:
@@ -159,8 +183,14 @@ class TestExecutable(TestCase):
     def test_guess_lang_cpp(self):
         self.assertEqual(Executable.guess_lang('name.cpp'), 'C++')
 
+    def test_guess_lang_delphi(self):
+        self.assertEqual(Executable.guess_lang('name.dpr'), 'Delphi')
+
     def test_guess_lang_java(self):
         self.assertEqual(Executable.guess_lang('name.java'), 'Java')
+
+    def test_guess_lang_pascal(self):
+        self.assertEqual(Executable.guess_lang('name.pas'), 'Pascal')
 
     def test_guess_lang_python(self):
         self.assertEqual(Executable.guess_lang('name.py'), 'Python3')
