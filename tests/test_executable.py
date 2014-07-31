@@ -167,6 +167,19 @@ class TestExecutable(TestCase):
             exec_res = executable.execute(args='42 58')
         self.assertEqual(exec_res.returncode, 100)
 
+    def test_work_dir_changing_python3(self):
+        tempdir = tempfile.TemporaryDirectory()
+
+        src_name = 'python3_path.py'
+        with self.unpack_src(src_name) as src_file:
+            executable = Executable(src_file.name, src_name, lang='Python3',
+                                    use_precompiled=False, save_compiled=False,
+                                    work_dir=tempdir.name)
+
+            exec_res = executable.execute(stdout=subprocess.PIPE)
+
+        self.assertEqual(exec_res.stdout, os.path.abspath(tempdir.name))
+
     # @unittest.skip('')
     # def test_start_compilation(self):
     # self.fail()

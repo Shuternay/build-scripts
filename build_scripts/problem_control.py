@@ -143,8 +143,9 @@ def build_tests(args):
         return
 
     gen_path = cfg.get_problem_param('gen', True) or 'gen.cpp'
-    gen_path = os.path.normpath(gen_path)
-    gen_ex = Executable(gen_path, 'gen', True)
+    gen_path = os.path.normpath(gen_path) or '.'
+    gen_work_dir = cfg.get_problem_param('gen_work_dir', True)
+    gen_ex = Executable(gen_path, 'gen', True, work_dir=gen_work_dir)
 
     ml = args['ml'] or cfg.get_problem_param('ml', True) or DEFAULT_ML
     ml = int(ml)  # because cfg.get_problem_param() returns string or None

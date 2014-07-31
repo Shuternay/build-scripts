@@ -35,7 +35,8 @@ class Executable:
         if not os.path.exists('tmp'):
             os.mkdir('tmp')
 
-        exec_out = self.exec_cmd = pjoin('tmp', os.path.basename(self.src_path) + '.out')
+        exec_out = pjoin('tmp', os.path.basename(self.src_path) + '.out')
+        self.exec_cmd = os.path.relpath(exec_out, self.work_dir)
 
         if self.use_precompiled and Executable.check_hash(self.src_path):
             print('Using previous version of binary\n')
@@ -52,7 +53,8 @@ class Executable:
         if not os.path.exists('tmp'):
             os.mkdir('tmp')
 
-        exec_out = self.exec_cmd = pjoin('tmp', os.path.basename(self.src_path) + '.out')
+        exec_out = pjoin('tmp', os.path.basename(self.src_path) + '.out')
+        self.exec_cmd = os.path.relpath(exec_out, self.work_dir)
 
         if self.use_precompiled and Executable.check_hash(self.src_path):
             print('Using previous version of binary\n')
@@ -71,7 +73,7 @@ class Executable:
             os.mkdir(out_folder)
 
         ml = self.ml
-        self.exec_cmd = 'java -cp {0} -Xmx{2}M -Xss{3}M {1}'.format(out_folder,
+        self.exec_cmd = 'java -cp {0} -Xmx{2}M -Xss{3}M {1}'.format(os.path.relpath(out_folder, self.work_dir),
                                                                     os.path.basename(self.src_path[:-len('.java')]),
                                                                     ml, ml // 2)
 
@@ -88,7 +90,8 @@ class Executable:
         if not os.path.exists('tmp'):
             os.mkdir('tmp')
 
-        exec_out = self.exec_cmd = pjoin('tmp', os.path.basename(self.src_path) + '.out')
+        exec_out = pjoin('tmp', os.path.basename(self.src_path) + '.out')
+        self.exec_cmd = os.path.relpath(exec_out, self.work_dir)
 
         if self.use_precompiled and Executable.check_hash(self.src_path):
             print('Using previous version of binary\n')
@@ -101,13 +104,13 @@ class Executable:
 
     def compile_python3(self):
         if os.system('python3 -V') == 0:  # command 'python3' doesn't exists on Windows
-            self.exec_cmd = 'python3 ' + self.src_path
+            self.exec_cmd = 'python3 ' + os.path.relpath(self.src_path, self.work_dir)
         else:
-            self.exec_cmd = 'python ' + self.src_path
+            self.exec_cmd = 'python ' + os.path.relpath(self.src_path, self.work_dir)
         self.compiled = True
 
     def compile_shell(self):
-        self.exec_cmd = 'sh ' + self.src_path
+        self.exec_cmd = 'sh ' + os.path.relpath(self.src_path, self.work_dir)
         self.compiled = True
 
     def start_compilation(self):
@@ -160,7 +163,8 @@ class Executable:
 
         process = subprocess.Popen((self.exec_cmd + ' ' + args).split(),
                                    stdin=stdin, stdout=stdout, stderr=stderr,
-                                   preexec_fn=self.get_limit_func())
+                                   preexec_fn=self.get_limit_func(),
+                                   cwd=self.work_dir)
 
         try:
             cout, cerr = process.communicate(timeout=tl)
