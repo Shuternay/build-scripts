@@ -31,6 +31,30 @@ class TestExecutable(TestCase):
         src_file.flush()
         return src_file
 
+
+    def test_bash_support(self):
+        src_name = 'bash_full.bash'
+        with self.unpack_src(src_name) as src_file:
+            executable = Executable(src_file.name, src_name, lang='Bash',
+                                    use_precompiled=False, save_compiled=False)
+
+            exec_res = executable.execute(stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        self.assertEqual(exec_res.stdout, 'stdout example')
+        self.assertEqual(exec_res.stderr, 'stderr example')
+        self.assertEqual(exec_res.returncode, 4)
+
+    def test_cpp_support(self):
+        src_name = 'cpp_full.cpp'
+        with self.unpack_src(src_name) as src_file:
+            executable = Executable(src_file.name, src_name, lang='C++',
+                                    use_precompiled=False, save_compiled=False)
+            exec_res = executable.execute(stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        self.assertEqual(exec_res.stdout, 'stdout example')
+        self.assertEqual(exec_res.stderr, 'stderr example')
+        self.assertEqual(exec_res.returncode, 4)
+
     def test_delphi_support(self):
         src_name = 'delphi_full.dpr'
         with self.unpack_src(src_name) as src_file:
@@ -67,16 +91,6 @@ class TestExecutable(TestCase):
         self.assertEqual(exec_res.stderr, 'stderr example')
         self.assertEqual(exec_res.returncode, 4)
 
-    def test_cpp_support(self):
-        src_name = 'cpp_full.cpp'
-        with self.unpack_src(src_name) as src_file:
-            executable = Executable(src_file.name, src_name, lang='C++',
-                                    use_precompiled=False, save_compiled=False)
-            exec_res = executable.execute(stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        self.assertEqual(exec_res.stdout, 'stdout example')
-        self.assertEqual(exec_res.stderr, 'stderr example')
-        self.assertEqual(exec_res.returncode, 4)
 
     # tests manual compilation finishing for not compilable languages (like Python)
     def test_manual_compilation_finishing_1(self):
@@ -189,6 +203,9 @@ class TestExecutable(TestCase):
     # @unittest.skip('')
     # def test_execute(self):
     #     self.fail()
+
+    def test_guess_lang_bash(self):
+        self.assertEqual(Executable.guess_lang('name.bash'), 'Bash')
 
     def test_guess_lang_c(self):
         self.assertEqual(Executable.guess_lang('name.c'), 'C')

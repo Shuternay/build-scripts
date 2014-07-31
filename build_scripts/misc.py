@@ -31,6 +31,10 @@ class Executable:
 
         self.start_compilation()
 
+    def compile_bash(self):
+        self.exec_cmd = 'bash ' + os.path.relpath(self.src_path, self.work_dir)
+        self.compiled = True
+
     def compile_cpp(self):
         if not os.path.exists('tmp'):
             os.mkdir('tmp')
@@ -117,6 +121,7 @@ class Executable:
         print('Starting compilation of {0}'.format(self.target))
 
         lang_to_comp = {
+            'Bash': self.compile_bash,
             'C': self.compile_cpp,
             'C++': self.compile_cpp,
             'Delphi': self.compile_delphi,
@@ -202,6 +207,7 @@ class Executable:
     @staticmethod
     def guess_lang(src_path: str):
         suffix2lang = [
+            ('.bash', 'Bash'),
             ('.c', 'C'),
             ('.cpp', 'C++'),
             ('.dpr', 'Delphi'),
