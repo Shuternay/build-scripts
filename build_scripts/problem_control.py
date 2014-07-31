@@ -404,15 +404,18 @@ def upload(args):
             print('Uploading checker')
             checker_path = cfg.get_problem_param('checker', True) or 'checker.cpp'
             checker_path = os.path.normpath(checker_path)
+            checker_name = os.path.basename(checker_path)
+
             with open(checker_path, 'rb') as f:
-                ftp.storbinary('STOR checker.cpp', f)
+                ftp.storbinary('STOR {0}'.format(checker_name), f)
 
         if args['validator']:
             print('Uploading validator')
             validator_path = cfg.get_problem_param('validator', True) or 'validator.cpp'
             validator_path = os.path.normpath(validator_path)
+            validator_name = os.path.basename(validator_path)
             with open(validator_path, 'rb') as f:
-                ftp.storbinary('STOR validator.cpp', f)
+                ftp.storbinary('STOR {0}'.format(validator_name), f)
 
         if args['testlib']:
             print('Uploading testlib')
