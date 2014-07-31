@@ -215,7 +215,7 @@ def check_solution(args):
     if not os.path.exists(pjoin('tmp', 'log')):
         os.mkdir(pjoin('tmp', 'log'))
     log_file_name = pjoin('tmp', 'log', '{}.log'.format(os.path.basename(solution)))
-    write_log('\nChecking solution ({})...'.format(datetime.datetime.today()), file=log_file_name)
+    write_log('\nChecking solution {0} ({1})...'.format(solution, datetime.datetime.today()), file=log_file_name)
 
     ok_count = 0
     for t in Test.test_gen('tests'):
