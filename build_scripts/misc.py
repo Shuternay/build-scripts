@@ -1,10 +1,12 @@
 # !/usr/bin/python3.3
-import collections
 import configparser
-import hashlib
-import os
 import subprocess
 import time
+
+import collections
+import hashlib
+import os
+
 
 __author__ = 'ksg'
 
@@ -68,7 +70,10 @@ class Executable:
                                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 
     def compile_python3(self):
-        self.exec_cmd = 'python3 ' + self.src_path
+        if os.system('python3 -V') == 0:  # command 'python3' doesn't exists on Windows
+            self.exec_cmd = 'python3 ' + self.src_path
+        else:
+            self.exec_cmd = 'python ' + self.src_path
         self.compiled = True
 
     def compile_shell(self):
