@@ -1,8 +1,11 @@
 import pkgutil
-import os
 import subprocess
-import tempfile
 from unittest import TestCase
+import sys
+import unittest
+
+import os
+import tempfile
 
 from build_scripts.misc import Executable
 
@@ -23,7 +26,7 @@ class TestExecutable(TestCase):
 
     def unpack_src(self, path):
         src = pkgutil.get_data('tests', os.path.join('executable_data', path))  # bytes
-        src_file = tempfile.NamedTemporaryFile()
+        src_file = tempfile.NamedTemporaryFile(delete=False)
         src_file.write(src)  # bytes too
         src_file.flush()
         return src_file
@@ -102,6 +105,7 @@ class TestExecutable(TestCase):
             exec_res = executable.execute()  # no TL
         self.assertEqual(exec_res.returncode, 0)
 
+    @unittest.skipUnless(sys.platform.startswith("linux"), "requires Linux")
     def test_execution_ml_1(self):
         src_name = 'cpp_ml_200.cpp'
         with self.unpack_src(src_name) as src_file:
@@ -111,6 +115,7 @@ class TestExecutable(TestCase):
             exec_res = executable.execute()
         self.assertNotEqual(exec_res.returncode, 0)
 
+    @unittest.skipUnless(sys.platform.startswith("linux"), "requires Linux")
     def test_execution_ml_2(self):
         src_name = 'cpp_ml_200.cpp'
         with self.unpack_src(src_name) as src_file:
