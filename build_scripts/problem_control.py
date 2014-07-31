@@ -3,12 +3,13 @@ import argparse
 import datetime
 import ftplib
 import netrc
-import os
 import pkgutil
+import subprocess
+
+import os
 import random
 import shutil
 import stat
-import subprocess
 
 from build_scripts import tex2xml
 from build_scripts import misc
@@ -85,6 +86,28 @@ class Test:
         return test_cnt
 
 
+def validate_single_test(test, validator_ex):
+    try:
+        with test.open_inf() as inf:
+            res = validator_ex.execute(stdin=inf, stderr=subprocess.PIPE)
+
+        if res.returncode == 0:
+            score = 1
+            msg = 'OK' + (' ({0})'.format(res.stderr) if res.stderr else '')
+            status = 'OK'
+        else:
+            score = 0
+            msg = '{0} [{1}]'.format(res.stderr, res.returncode)
+            status = 'FL'
+
+    except KeyboardInterrupt:
+        score = 0
+        msg = 'Interrupted'
+        status = 'IR'
+
+    return score, status, msg
+
+
 def validate_tests(args=None):
     validator_path = cfg.get_problem_param('validator', True) or 'validator.cpp'
     validator_path = os.path.normpath(validator_path)
@@ -94,31 +117,20 @@ def validate_tests(args=None):
     if not os.path.exists(pjoin('tmp', 'log')):
         os.mkdir(pjoin('tmp', 'log'))
     log_file_name = pjoin('tmp', 'log', '{}.log'.format(os.path.basename(validator_path)))
-    write_log('\nValidating tests ({})...'.format(datetime.datetime.today()), file=log_file_name)
+    write_log('\nValidating tests ({0})...'.format(datetime.datetime.today()), file=log_file_name)
 
     ok_count = 0
 
     for t in Test.test_gen('tests'):
-        try:
-            with t.open_inf() as inf:
-                res = validator_ex.execute(stdin=inf, stderr=subprocess.PIPE)
+        score, status, msg = validate_single_test(t, validator_ex)
 
-            if res.returncode != 0:
-                raise CheckException('{} [{}]'.format(res.stderr, res.returncode))
-
-        except KeyboardInterrupt:
-            msg = 'Interrupted'
+        if status == 'IR':
             break
 
-        except CheckException as ce:
-            msg = ce.msg
-        else:
-            msg = 'OK ({})'.format(res.stderr) if res.stderr else 'OK'
-            ok_count += 1
-        finally:
-            write_log('test {0}: {1}'.format(t.test_num_as_str(), msg))
+        ok_count += score
+        write_log('test {0}: {1}'.format(t.test_num_as_str(), msg))
 
-    write_log('correct {:d} from {:d}'.format(ok_count, Test.test_len('tests')), file=log_file_name)
+    write_log('correct {0} from {1}'.format(ok_count, Test.test_len('tests')), file=log_file_name)
     print('Validating complete\n')
 
     return [ok_count, Test.test_len('tests')]
