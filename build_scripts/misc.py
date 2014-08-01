@@ -40,7 +40,8 @@ class Executable:
             os.mkdir('tmp')
 
         exec_out = pjoin('tmp', os.path.basename(self.src_path) + '.out')
-        self.exec_cmd = os.path.relpath(exec_out, self.work_dir)
+        # if work_dir is 'tmp' we should call './binary' instead of 'binary'
+        self.exec_cmd = os.path.join('./', os.path.relpath(exec_out, self.work_dir))
 
         if self.use_precompiled and Executable.check_hash(self.src_path):
             print('Using previous version of binary\n')
@@ -58,7 +59,8 @@ class Executable:
             os.mkdir('tmp')
 
         exec_out = pjoin('tmp', os.path.basename(self.src_path) + '.out')
-        self.exec_cmd = os.path.relpath(exec_out, self.work_dir)
+        # if work_dir is 'tmp' we should call './binary' instead of 'binary'
+        self.exec_cmd = os.path.join('./', os.path.relpath(exec_out, self.work_dir))
 
         if self.use_precompiled and Executable.check_hash(self.src_path):
             print('Using previous version of binary\n')
@@ -95,7 +97,8 @@ class Executable:
             os.mkdir('tmp')
 
         exec_out = pjoin('tmp', os.path.basename(self.src_path) + '.out')
-        self.exec_cmd = os.path.relpath(exec_out, self.work_dir)
+        # if work_dir is 'tmp' we should call './binary' instead of 'binary'
+        self.exec_cmd = os.path.join('./', os.path.relpath(exec_out, self.work_dir))
 
         if self.use_precompiled and Executable.check_hash(self.src_path):
             print('Using previous version of binary\n')

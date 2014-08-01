@@ -194,6 +194,17 @@ class TestExecutable(TestCase):
 
         self.assertEqual(exec_res.stdout, os.path.abspath(tempdir.name))
 
+    def test_work_dir_changing_to_tmp_cpp(self):
+        src_name = 'cpp_exit0.cpp'
+        with self.unpack_src(src_name) as src_file:
+            executable = Executable(src_file.name, src_name, lang='C++',
+                                    use_precompiled=False, save_compiled=False,
+                                    work_dir='tmp')
+
+            exec_res = executable.execute(stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        self.assertEqual(exec_res.returncode, 0)
+
     # @unittest.skip('')
     # def test_start_compilation(self):
     # self.fail()
