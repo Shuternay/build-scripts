@@ -1,8 +1,8 @@
 #!/usr/bin/python3.3
 
-import re
-
 import sys
+
+import re
 
 
 __author__ = 'ksg'
@@ -116,6 +116,25 @@ type="standard">
 '''.format(inf, ouf))
     fout.write('''</examples>\n''')
     fout.write('''</problem>\n''')
+
+
+def build_empty(text, title, pack, fout):
+    fout.write('''\
+<?xml version="1.0" encoding="utf-8" ?>
+<problem
+package="{pack}"
+id="{title}"
+type="standard">
+<statement language="ru_RU">
+<title>{title}</title>
+
+<description>
+<p style="font-size:12px">
+{text}
+</p>
+</description>
+</statement>
+</problem>\n'''.format(title=title, pack=pack, text=text))
 
 
 def process_part(text):

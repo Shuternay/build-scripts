@@ -380,10 +380,16 @@ def stress_test(args):
 def build_st(args):
     with open(pjoin('statement', cfg.get_problem_param('short name') + '.tex')) as fin:
         with open(pjoin('statement', 'statement.xml'), 'w') as fout:
-            tex2xml.convert(fin, fout,
-                            cfg.get_problem_param('system name'),
-                            cfg.get_problem_param('source', True),
-                            cfg.get_problem_param('pdf link', True))
+            if cfg.get_problem_param('statement_text', True):
+                tex2xml.build_empty(cfg.get_problem_param('statement_text'),
+                                    cfg.get_problem_param('title'),
+                                    cfg.get_problem_param('system name'),
+                                    fout)
+            else:
+                tex2xml.convert(fin, fout,
+                                cfg.get_problem_param('system name'),
+                                cfg.get_problem_param('source', True),
+                                cfg.get_problem_param('pdf link', True) or cfg.get_problem_param('pdf_link', True))
 
 
 def upload(args):
