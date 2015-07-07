@@ -1,4 +1,4 @@
-#!/usr/bin/python3.3
+# !/usr/bin/python3
 import argparse
 import datetime
 import ftplib
