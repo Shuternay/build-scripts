@@ -14,7 +14,7 @@ import stat
 from build_scripts import tex2xml
 from build_scripts import misc
 from build_scripts.misc import write_log
-from build_scripts.misc import Executable
+from build_scripts.executable import Executable
 
 
 pjoin = os.path.join

@@ -7,7 +7,7 @@ import unittest
 import os
 import tempfile
 
-from build_scripts.misc import Executable
+from build_scripts.executable import Executable
 
 
 __author__ = 'ksg'
@@ -30,7 +30,6 @@ class TestExecutable(TestCase):
         src_file.write(src)  # bytes too
         src_file.flush()
         return src_file
-
 
     def test_bash_support(self):
         src_name = 'bash_full.bash'
@@ -90,7 +89,6 @@ class TestExecutable(TestCase):
         self.assertEqual(exec_res.stdout, 'stdout example')
         self.assertEqual(exec_res.stderr, 'stderr example')
         self.assertEqual(exec_res.returncode, 4)
-
 
     # tests manual compilation finishing for not compilable languages (like Python)
     def test_manual_compilation_finishing_1(self):
