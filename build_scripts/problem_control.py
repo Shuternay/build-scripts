@@ -16,7 +16,6 @@ from build_scripts import misc
 from build_scripts.misc import write_log
 from build_scripts.executable import Executable
 
-
 pjoin = os.path.join
 
 __author__ = 'ksg'
@@ -39,7 +38,7 @@ class Test:
         if not os.path.exists(folder):
             raise Exception('Folder with tests does not exists')
         name_width = cfg.get_problem_param('test_num_width') or str(DEFAULT_TEST_NUM_WIDTH)
-        self.str_format = '{:0>' + name_width + 'd}'  # '{:0>2d}'
+        self.str_format = '{:0>' + str(name_width) + 'd}'  # '{:0>2d}'
 
     def exists(self):
         return os.path.exists(pjoin(self.folder, self.str_format.format(self.test_num)))
@@ -137,7 +136,7 @@ def validate_tests(args=None):
 
 
 def build_tests(args):
-    if cfg.has_problem_param('use_doall'):
+    if cfg.get_problem_param('use_doall', True):
         print('using doall script for tests building\n')
         os.system(cfg.get_problem_param('doall_cmd', True) or 'sh doall.sh')
         return
@@ -383,11 +382,11 @@ def build_st(args):
             if cfg.get_problem_param('statement_text', True):
                 tex2xml.build_empty(cfg.get_problem_param('statement_text'),
                                     cfg.get_problem_param('title'),
-                                    cfg.get_problem_param('system name'),
+                                    cfg.get_problem_param('system name') or cfg.get_problem_param('system_name'),
                                     fout)
             else:
                 tex2xml.convert(fin, fout,
-                                cfg.get_problem_param('system name'),
+                                cfg.get_problem_param('system name') or cfg.get_problem_param('system_name'),
                                 cfg.get_problem_param('source', True),
                                 cfg.get_problem_param('pdf link', True) or cfg.get_problem_param('pdf_link', True))
 
@@ -405,7 +404,8 @@ def upload(args):
 
     with ftplib.FTP(cfg.get_contest_host()) as ftp:
         print(ftp.login(auth_data[0], auth_data[2]))
-        ftp.cwd(cfg.get_server_contest_path() + 'problems/' + cfg.get_problem_param('system name'))
+        ftp.cwd(cfg.get_server_contest_path() + 'problems/' + (
+        cfg.get_problem_param('system name') or cfg.get_problem_param('system_name')))
 
         if args['checker']:
             print('Uploading checker')
@@ -480,7 +480,7 @@ def add(args):
         ('gen.cpp', 'gen.cpp', False),
         ('validator.cpp', 'validator.cpp', False),
         ('sol.cpp', 'solutions/{0}.cpp'.format(problem_name), False),
-        ('problem.conf', 'problem.conf', True),
+        ('problem.json', 'problem.json', True),
         ('st.tex', 'statement/{0}.tex'.format(problem_name), False),
         ('valuer.cfg', 'valuer.cfg', False),
     ]
@@ -489,7 +489,7 @@ def add(args):
         with open(os.path.join(problem_path, dst), 'w') as f:
             data = str(pkgutil.get_data('build_scripts', os.path.join('data', 'bootstrap', src)), 'utf-8')
             if ext:
-                data = data.format(problem_name)
+                data = data.replace('{0}', problem_name)
             f.write(data)
 
 
@@ -507,7 +507,7 @@ def add_contest(args):
         #(source, destination),
         ('problems.tex', 'statements/problems.tex'),
         ('olymp.sty', 'statements/olymp.sty'),
-        ('contest.conf', 'contest.conf'),
+        ('contest.json', 'contest.json'),
         ('import.sty', 'statements/import.sty'.format(name)),
         ('clean.sh', 'statements/clean.sh'.format(name)),
         ('r.sh', 'statements/r.sh'.format(name)),

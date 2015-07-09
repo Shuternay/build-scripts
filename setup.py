@@ -16,5 +16,8 @@ setup(
             'problem-control = build_scripts.problem_control:main',
             'process-runlog = build_scripts.process_run_log:main',
         ],
-    }
+    },
+    install_requires=[
+        'jsoncomment',
+    ],
 )

@@ -1,8 +1,9 @@
-# !/usr/bin/python3.3
+# !/usr/bin/python3
 import configparser
+import json
 
+import jsoncomment
 import os
-
 
 __author__ = 'ksg'
 
@@ -22,44 +23,100 @@ def write_log(s: str, end='\n', file='', out=None, write_to_stdout=True, write_t
 
 class Config:
     def __init__(self):
-        if os.path.exists('problem.conf'):
-            self.problem_cfg = configparser.ConfigParser(allow_no_value=True)
-            self.problem_cfg.read('problem.conf')
+        self.problem_cfg_is_json = None
+        self.contest_cfg_is_json = None
+
+        jsoncomment.package.comments.COMMENT_PREFIX = ('#', ';', '//')
+
+        if get_problem_root():
+            if os.path.exists(os.path.join(get_problem_root(), 'problem.json')):
+                with open(os.path.join(get_problem_root(), 'problem.json')) as fp:
+                    # self.problem_cfg = json.loads(jsmin(fp.read(), quote_chars="'\"`"))
+                    self.problem_cfg = jsoncomment.JsonComment(json).load(fp)
+                self.problem_cfg_is_json = True
+            else:
+                self.problem_cfg = configparser.ConfigParser(allow_no_value=True)
+                self.problem_cfg.read(os.path.join(get_problem_root(), 'problem.conf'))
+                self.problem_cfg_is_json = False
 
         if get_contest_root():
-            self.contest_cfg = configparser.ConfigParser()
-            self.contest_cfg.read(os.path.join(get_contest_root(), 'contest.conf'))
+            if os.path.exists(os.path.join(get_contest_root(), 'contest.json')):
+                with open(os.path.join(get_contest_root(), 'contest.json')) as fp:
+                    self.contest_cfg = jsoncomment.JsonComment(json).load(fp)
+                self.contest_cfg_is_json = True
+            else:
+                self.contest_cfg = configparser.ConfigParser()
+                self.contest_cfg.read(os.path.join(get_contest_root(), 'contest.conf'))
+                self.contest_cfg_is_json = False
 
     def get_main_solution(self):
-        return self.problem_cfg[self.problem_cfg['general']['main solution']]['path']
+        if self.problem_cfg_is_json:
+            for solution in self.problem_cfg['solutions']:
+                if solution.get('is_main', False):
+                    return solution['path']
+        else:
+            return self.problem_cfg[self.problem_cfg['general']['main solution']]['path']
 
     def get_solutions(self):
-        lst = self.problem_cfg.sections()[:]
-        lst.remove('general')
-        return [(x, self.problem_cfg[x]['path']) for x in lst]
+        if self.problem_cfg_is_json:
+            return [(x.get('name', os.path.basename(x['path'])), x['path']) for x in self.problem_cfg['solutions']]
+        else:
+            lst = self.problem_cfg.sections()[:]
+            lst.remove('general')
+            return [(x, self.problem_cfg[x]['path']) for x in lst]
 
-    def get_problem_param(self, param, use_default=False):
+    def get_problem_param(self, param, use_default=True):
         if use_default:
-            return self.problem_cfg['general'].get(param, None)
-        else:  # crash on Key Error
-            return self.problem_cfg['general'].get(param)
+            if self.problem_cfg_is_json:
+                return self.problem_cfg.get(param, None)
+            else:
+                return self.problem_cfg['general'].get(param, None)
+        else:  # can raise KeyError
+            if self.problem_cfg_is_json:
+                return self.problem_cfg[param]
+            else:
+                return self.problem_cfg['general'][param]
 
     def has_problem_param(self, param):
-        return param in self.problem_cfg['general']
+        if self.problem_cfg_is_json:
+            return param in self.problem_cfg
+        else:
+            return param in self.problem_cfg['general']
 
     def get_contest_host(self):
-        return self.contest_cfg['default']['contest_host']
+        if self.contest_cfg_is_json:
+            return self.contest_cfg['server']
+        else:
+            return self.contest_cfg['default']['contest_host']
 
     def get_server_contest_path(self):
-        return self.contest_cfg['default']['contest_path']
+        if self.contest_cfg_is_json:
+            return self.contest_cfg['server_path']
+        else:
+            return self.contest_cfg['default']['contest_path']
 
 
 def get_contest_root():
-    if os.path.exists('lib') and os.path.exists('problems') and os.path.exists('contest.conf'):
+    if os.path.exists('lib') and os.path.exists('problems') and \
+            (os.path.exists('contest.conf') or os.path.exists('contest.json')):
         root = os.curdir
-    elif os.path.exists('../lib') and os.path.exists('../problems') and os.path.exists('../contest.conf'):
+    elif os.path.exists('../lib') and os.path.exists('../problems') and \
+            (os.path.exists('../contest.conf') or os.path.exists('../contest.json')):
         root = os.path.normpath(os.path.join('../', os.curdir))
-    elif os.path.exists('../../lib') and os.path.exists('../../problems') and os.path.exists('../../contest.conf'):
+    elif os.path.exists('../../lib') and os.path.exists('../../problems') and \
+            (os.path.exists('../../contest.conf') or os.path.exists('../../contest.json')):
+        root = os.path.normpath(os.path.join('../../', os.curdir))
+    else:
+        root = None
+    return root
+
+
+def get_problem_root():
+    if os.path.exists('problem.conf') or os.path.exists('problem.json'):
+        root = os.curdir
+    elif os.path.exists('../problem.conf') or os.path.exists('../problem.json'):
+        root = os.path.normpath(os.path.join('../', os.curdir))
+    elif os.path.exists('../../problem.conf') or os.path.exists('../../problem.json'):
         root = os.path.normpath(os.path.join('../../', os.curdir))
     else:
         root = None

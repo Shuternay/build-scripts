@@ -1,0 +1,7 @@
+{
+  "contest_name": "",
+  // Only ftp supported
+  "protocol": "ftp",
+  "server": "omsk-olymp.ru",
+  "server_path": "judges/0000../",
+}

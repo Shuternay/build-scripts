@@ -1,0 +1,41 @@
+{
+  "title": "",
+  "short_name": "floors",
+  "system_name": "",
+  "source": "...",
+  "solutions": [
+    {
+      "path": "solutions/floors_ks.cpp",
+      "is_main": true,
+    },
+    {
+      "path": "solutions/floors_ks_slow.cpp"
+    },
+    {
+      "path": "solutions/floors_ks_fast.cpp",
+      "name": "ks_fast"
+    },
+  ],
+  "validator": "validator.cpp",
+  "checker": "checker.cpp",
+  "gen": "gen.cpp",
+  "gen_work_dir": ".",
+  "test_num_width": 2,
+  // Number of samples in the statement.
+  "samples_num": 0,
+  // Folder with samples
+  "samples_folder": "samples",
+  // Time limit for problem, in seconds
+  "tl": 3,
+  // Memory limit for problem, in MB
+  "ml": 512,
+  // use doall script for tests building
+  "use_doall": false,
+  // command for doall script.
+  //"doall_cmd": "sh doall.sh",
+
+  // use wipe script for cleaning
+  "use_wipe": false,
+  // command for wipe script.
+  //"wipe_cmd": "sh wipe.sh",
+}

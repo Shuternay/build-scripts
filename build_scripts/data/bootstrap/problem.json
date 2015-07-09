@@ -1,0 +1,35 @@
+{
+  "title": "",
+  "short_name": "{0}",
+  "system_name": "{0}",
+  "source": "...",
+  "solutions": [
+    {
+      "path": "solutions/{0}.cpp",
+      "is_main": true,
+    },
+    // {"path": "solutions/{0}.cpp"},
+  ],
+  "test_num_width": 2,
+  // Number of samples in the statement.
+  "samples_num": 0,
+  // Folder with samples
+  "samples_folder": "samples",
+  // Time limit for problem, in seconds
+  "tl": 3,
+  // Memory limit for problem, in MB
+  "ml": 512,
+  "validator": "validator.cpp",
+  "checker": "checker.cpp",
+  "gen": "gen.cpp",
+  "gen_work_dir": ".",
+  // use doall script for tests building
+  "use_doall": false,
+  // command for doall script.
+  //"doall_cmd": "sh doall.sh",
+
+  // use wipe script for cleaning
+  "use_wipe": false,
+  // command for wipe script.
+  //"wipe_cmd": "sh wipe.sh",
+}
