@@ -15,6 +15,7 @@ from build_scripts import tex2xml
 from build_scripts import misc
 from build_scripts.misc import write_log
 from build_scripts.executable import Executable
+import build_scripts.polygon
 
 pjoin = os.path.join
 
@@ -494,6 +495,21 @@ def add(args):
             f.write(data)
 
 
+def import_polygon_problem(args):
+    problem_name = args['name'] or os.path.basename(args['path'])
+    if args['name'] is None and problem_name.endswith('.zip'):
+        problem_name = problem_name[:-len('.zip')]
+
+    problem_path = os.path.join(misc.get_contest_root(), 'problems', problem_name)
+
+    if os.path.exists(problem_path):
+        raise ValueError('folder with the same name ({0}) exists'.format(problem_path))
+
+    os.mkdir(problem_path)
+
+    build_scripts.polygon.import_problem(args['path'], problem_path)
+
+
 def add_contest(args):
     name = args['name']
     if os.path.exists(name):
@@ -590,6 +606,12 @@ def main():
     parser_add = subparsers.add_parser('add', help='add problem')
     parser_add.add_argument('name', help='problem name')
     parser_add.set_defaults(func=add)
+
+    # (import) import new problem from polygon archive
+    parser_import = subparsers.add_parser('import', help='import problem from polygon archive')
+    parser_import.add_argument('path', help='archive or folder path')
+    parser_import.add_argument('name', nargs='?', help='problem name')
+    parser_import.set_defaults(func=import_polygon_problem)
 
     # (add_contest) add new contest
     parser_add_contest = subparsers.add_parser('add_contest', help='create new contest')
