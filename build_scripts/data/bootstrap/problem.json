@@ -20,7 +20,7 @@
   // Memory limit for problem, in MB
   "ml": 512,
   "validator": "validator.cpp",
-  "checker": "checker.cpp",
+  "checker": "check.cpp",
   "gen": "gen.cpp",
   "gen_work_dir": ".",
   // use doall script for tests building

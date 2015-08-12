@@ -205,7 +205,7 @@ def check_solution(args):
     solution = args['solution'] or cfg.get_main_solution()
     sol_ex = Executable(solution, 'solution', ml=ml)
 
-    checker_path = cfg.get_problem_param('checker', True) or 'checker.cpp'
+    checker_path = cfg.get_problem_param('checker', True) or 'check.cpp'
     checker_path = os.path.normpath(checker_path)
     check_ex = Executable(checker_path, 'checker', True)
 
@@ -284,7 +284,7 @@ def stress_test(args):
     gen_path = cfg.get_problem_param('gen', True) or 'gen.cpp'
     gen_path = os.path.normpath(gen_path)
 
-    checker_path = cfg.get_problem_param('checker', True) or 'checker.cpp'
+    checker_path = cfg.get_problem_param('checker', True) or 'check.cpp'
     checker_path = os.path.normpath(checker_path)
 
     gen_ex = Executable(gen_path, 'gen', True)
@@ -411,7 +411,7 @@ def upload(args):
 
         if args['checker']:
             print('Uploading checker')
-            checker_path = cfg.get_problem_param('checker', True) or 'checker.cpp'
+            checker_path = cfg.get_problem_param('checker', True) or 'check.cpp'
             checker_path = os.path.normpath(checker_path)
             checker_name = os.path.basename(checker_path)
 
@@ -478,7 +478,7 @@ def add(args):
 
     files = [
         #(source, destination, extract variables),
-        ('checker.cpp', 'checker.cpp', False),
+        ('checker.cpp', 'check.cpp', False),
         ('gen.cpp', 'gen.cpp', False),
         ('validator.cpp', 'validator.cpp', False),
         ('sol.cpp', 'solutions/{0}.cpp'.format(problem_name), False),
