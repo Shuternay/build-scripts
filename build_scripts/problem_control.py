@@ -14,6 +14,7 @@ import stat
 from build_scripts import tex2xml
 from build_scripts import misc
 from build_scripts.misc import write_log
+from build_scripts.misc import bcolors
 from build_scripts.executable import Executable
 import build_scripts.polygon
 
@@ -130,7 +131,9 @@ def validate_tests(args=None):
         ok_count += score
         write_log('test {0}: {1}'.format(t.test_num_as_str(), msg))
 
-    write_log('correct {0} from {1}'.format(ok_count, Test.test_len('tests')), file=log_file_name)
+    tests_num = Test.test_len('tests')
+    write_log('correct {0} from {1}'.format(ok_count, tests_num), file=log_file_name,
+              color=bcolors.OKGREEN if ok_count == tests_num else bcolors.WARNING)
     print('Validating complete\n')
 
     return [ok_count, Test.test_len('tests')]
@@ -151,24 +154,41 @@ def build_tests(args):
     ml = int(ml)  # because cfg.get_problem_param() returns string or None
 
     main_solution = args['main_solution'] or cfg.get_main_solution()
-    solution_ex = Executable(main_solution, 'main_solution', ml=ml)
-
     if not os.path.exists(pjoin('tmp', 'log')):
         os.mkdir(pjoin('tmp', 'log'))
     log_file_name = pjoin('tmp', 'log', 'gen_{}.log'.format(os.path.basename(main_solution)))
+
+    if not os.path.exists(main_solution):
+        write_log('Can\'t compile solution: '
+                  'No such file or directory: {0} ({1})'.format(main_solution, datetime.datetime.today()),
+                  file=log_file_name, color=bcolors.FAIL)
+        exit(1)
+    solution_ex = Executable(main_solution, 'main_solution', ml=ml)
+
     write_log('\nGenerating tests ({})...'.format(datetime.datetime.today()), file=log_file_name)
 
     if os.path.exists('tests'):
         shutil.rmtree('tests')
     os.mkdir('tests')
 
+    try:
+        gen_ex.finish_compilation()
+    except Exception as e:
+        write_log('Can\'t compile generator: {0} ({1})'.format(e.args, datetime.datetime.today()),
+                  file=log_file_name, color=bcolors.FAIL)
+        exit(1)
     res = gen_ex.execute(args='0')
     if res.returncode != 0:
         raise Exception('Generator error')
 
     validate_tests()
 
-    solution_ex.finish_compilation()
+    try:
+        solution_ex.finish_compilation()
+    except Exception as e:
+        write_log('Can\'t compile solution: {0} ({1})'.format(e.args, datetime.datetime.today()),
+                  file=log_file_name, color=bcolors.FAIL)
+        exit(1)
 
     write_log('\nGenerating answers...', file=log_file_name)
 
@@ -203,18 +223,35 @@ def check_solution(args):
     ml = int(ml)  # because cfg.get_problem_param() returns string or None
 
     solution = args['solution'] or cfg.get_main_solution()
+    log_file_name = pjoin('tmp', 'log', '{}.log'.format(os.path.basename(solution)))
+
+    if not os.path.exists(pjoin('tmp', 'log')):
+        os.mkdir(pjoin('tmp', 'log'))
+    if not os.path.exists(solution):
+        write_log('Can\'t compile solution: '
+                  'No such file or directory: {0} ({1})'.format(solution, datetime.datetime.today()),
+                  file=log_file_name, color=bcolors.FAIL)
+        return [0, 0]
+
     sol_ex = Executable(solution, 'solution', ml=ml)
 
     checker_path = cfg.get_problem_param('checker', True) or 'check.cpp'
     checker_path = os.path.normpath(checker_path)
+    if not os.path.exists(checker_path):
+        write_log('Can\'t compile checker: '
+                  'No such file or directory: {0} ({1})'.format(checker_path, datetime.datetime.today()),
+                  file=log_file_name, color=bcolors.FAIL)
+        return [0, 0]
     check_ex = Executable(checker_path, 'checker', True)
 
-    sol_ex.finish_compilation()
+    try:
+        sol_ex.finish_compilation()
+    except Exception as e:
+        write_log('Can\'t compile solution: {0} ({1})'.format(e.args, datetime.datetime.today()),
+                  file=log_file_name, color=bcolors.FAIL)
+        return [0, 0]
     check_ex.finish_compilation()
 
-    if not os.path.exists(pjoin('tmp', 'log')):
-        os.mkdir(pjoin('tmp', 'log'))
-    log_file_name = pjoin('tmp', 'log', '{}.log'.format(os.path.basename(solution)))
     write_log('\nChecking solution {0} ({1})...'.format(solution, datetime.datetime.today()), file=log_file_name)
 
     ok_count = 0
@@ -253,9 +290,11 @@ def check_solution(args):
                 os.remove(pjoin('tmp', 'problem.out'))
             write_log('test {0}: time = {2:.2f}, {1}'.format(t.test_num_as_str(), msg, time))
 
-    write_log('passed {:d} from {:d}'.format(ok_count, Test.test_len('tests')), end='\n\n', file=log_file_name)
+    tests_num = Test.test_len('tests')
+    write_log('passed {:d} from {:d}'.format(ok_count, tests_num), end='\n\n', file=log_file_name,
+              color=bcolors.OKGREEN if ok_count == tests_num else bcolors.WARNING)
 
-    return [ok_count, Test.test_len('tests')]
+    return [ok_count, tests_num]
 
 
 def check_all_solutions(args):
@@ -407,7 +446,7 @@ def upload(args):
     with ftplib.FTP(cfg.get_contest_host()) as ftp:
         print(ftp.login(auth_data[0], auth_data[2]))
         ftp.cwd(cfg.get_server_contest_path() + 'problems/' + (
-        cfg.get_problem_param('system name') or cfg.get_problem_param('system_name')))
+            cfg.get_problem_param('system name') or cfg.get_problem_param('system_name')))
 
         if args['checker']:
             print('Uploading checker')
@@ -477,7 +516,7 @@ def add(args):
     os.mkdir(pjoin(problem_path, 'statement'))
 
     files = [
-        #(source, destination, extract variables),
+        # (source, destination, extract variables),
         ('checker.cpp', 'check.cpp', False),
         ('gen.cpp', 'gen.cpp', False),
         ('validator.cpp', 'validator.cpp', False),
@@ -521,7 +560,7 @@ def add_contest(args):
     os.mkdir(pjoin(name, 'lib'))
 
     files = [
-        #(source, destination),
+        # (source, destination),
         ('problems.tex', 'statements/problems.tex'),
         ('olymp.sty', 'statements/olymp.sty'),
         ('contest.json', 'contest.json'),

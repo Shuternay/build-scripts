@@ -10,9 +10,23 @@ __author__ = 'ksg'
 pjoin = os.path.join
 
 
-def write_log(s: str, end='\n', file='', out=None, write_to_stdout=True, write_to_file=True):
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
+def write_log(s: str, end='\n', file='', out=None, write_to_stdout=True, write_to_file=True, color=None):
     if write_to_stdout:
-        print(s, end=end)
+        if color:
+            print(color + s + bcolors.ENDC, end=end)
+        else:
+            print(s, end=end)
 
     if write_to_file and (out or not file == ''):
         if not out:
@@ -26,7 +40,7 @@ class Config:
         self.problem_cfg_is_json = None
         self.contest_cfg_is_json = None
 
-        jsoncomment.package.comments.COMMENT_PREFIX = ('#', ';', '//')
+        jsoncomment.package.comments.COMMENT_PREFIX = ('#', ';', '//')  # Dirty hack!!
 
         if get_problem_root():
             if os.path.exists(os.path.join(get_problem_root(), 'problem.json')):

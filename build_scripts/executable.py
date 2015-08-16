@@ -6,7 +6,7 @@ import hashlib
 import os
 
 from build_scripts.misc import pjoin
-
+from build_scripts.misc import bcolors
 
 __author__ = 'ksg'
 
@@ -147,7 +147,7 @@ class Executable:
 
         for x in (cout, cerr):
             if x:
-                print(x)
+                print(bcolors.WARNING + x + bcolors.ENDC)
 
         res = self.compile_process.returncode
 
