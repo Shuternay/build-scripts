@@ -18,6 +18,6 @@ setup(
         ],
     },
     install_requires=[
-        'jsoncomment',
+        'jsoncomment', 'paramiko', 'scp'
     ],
 )

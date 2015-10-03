@@ -6,6 +6,9 @@ import netrc
 import pkgutil
 import subprocess
 
+from paramiko import SSHClient
+import paramiko
+from scp import SCPClient
 import os
 import random
 import shutil
@@ -222,11 +225,13 @@ def check_solution(args):
     ml = args['ml'] or cfg.get_problem_param('ml', True) or DEFAULT_ML
     ml = int(ml)  # because cfg.get_problem_param() returns string or None
 
+    if not os.path.exists('tmp'):
+        os.mkdir('tmp')
+    if not os.path.exists(pjoin('tmp', 'log')):
+        os.mkdir(pjoin('tmp', 'log'))
     solution = args['solution'] or cfg.get_main_solution()
     log_file_name = pjoin('tmp', 'log', '{}.log'.format(os.path.basename(solution)))
 
-    if not os.path.exists(pjoin('tmp', 'log')):
-        os.mkdir(pjoin('tmp', 'log'))
     if not os.path.exists(solution):
         write_log('Can\'t compile solution: '
                   'No such file or directory: {0} ({1})'.format(solution, datetime.datetime.today()),
@@ -492,6 +497,68 @@ def upload(args):
         ftp.quit()
 
 
+def upload_ssh(args):
+    if os.path.exists(os.path.expanduser('~/.netrc')):
+        auth_data = netrc.netrc(os.path.expanduser('~/.netrc')).authenticators(cfg.get_contest_host())
+    else:
+        auth_data = None
+
+    if not auth_data:
+        login = input('login: ')
+        password = input('password: ')
+        auth_data = (login, None, password)
+
+    ssh = SSHClient()
+    ssh.load_system_host_keys()
+    ssh.set_missing_host_key_policy(paramiko.WarningPolicy())
+    ssh.connect(cfg.get_contest_host(), username=auth_data[0], password=auth_data[2])
+
+    with SCPClient(ssh.get_transport()) as scp:
+        # print(ftp.login(auth_data[0], auth_data[2]))
+        # ftp.cwd(cfg.get_server_contest_path() + 'problems/' + (
+        #     cfg.get_problem_param('system name') or cfg.get_problem_param('system_name')))
+
+        path_prefix = cfg.get_server_contest_path() + 'problems/' + (
+            cfg.get_problem_param('system name') or cfg.get_problem_param('system_name'))
+
+        if args['checker']:
+            print('Uploading checker')
+            checker_path = cfg.get_problem_param('checker', True) or 'check.cpp'
+            checker_path = os.path.normpath(checker_path)
+            checker_out_path = os.path.join(path_prefix, os.path.basename(checker_path))
+
+            scp.put(checker_path, checker_out_path)
+
+        if args['validator']:
+            print('Uploading validator')
+            validator_path = cfg.get_problem_param('validator', True) or 'validator.cpp'
+            validator_path = os.path.normpath(validator_path)
+            validator_out_path = os.path.join(path_prefix, os.path.basename(validator_path))
+
+            scp.put(validator_path, validator_out_path)
+
+        if args['testlib']:
+            print('Uploading testlib')
+
+            scp.put('../../lib/testlib.h', os.path.join(path_prefix, 'testlib.h'))
+
+        if args['tests']:
+            print('Uploading tests')
+            for t in Test.test_gen('tests'):
+                print('uploading {} and {}'.format(t.inf_name(), t.ans_name()))
+
+                scp.put(t.inf_path(), os.path.join(path_prefix, 'tests', t.inf_name()))
+                scp.put(t.ans_path(), os.path.join(path_prefix, 'tests', t.ans_name()))
+
+        if args['statement']:
+            print('Uploading statement.xml')
+            scp.put('statement/statement.xml', os.path.join(path_prefix, 'statement.xml'))
+
+        if args['gvaluer']:
+            print('Uploading valuer.cfg')
+            scp.put('valuer.cfg', os.path.join(path_prefix, 'valuer.cfg'))
+
+
 def clean(args):
     if cfg.has_problem_param('use_wipe'):
         print('using wipe script for cleaning\n')
@@ -636,6 +703,16 @@ def main():
     parser_upload.add_argument('-s', '--statement', action='store_true', help='upload statement.xml')
     parser_upload.add_argument('-g', '--gvaluer', action='store_true', help='upload valuer.cfg')
     parser_upload.set_defaults(func=upload)
+
+    # (upload) upload files to server
+    parser_upload_ssh = subparsers.add_parser('upload_ssh', help='upload data on contest server')
+    parser_upload_ssh.add_argument('-t', '--tests', action='store_true', help='upload tests')
+    parser_upload_ssh.add_argument('-c', '--checker', action='store_true', help='upload checker sources')
+    parser_upload_ssh.add_argument('-v', '--validator', action='store_true', help='upload validator sources')
+    parser_upload_ssh.add_argument('-l', '--testlib', action='store_true', help='upload testlib.h')
+    parser_upload_ssh.add_argument('-s', '--statement', action='store_true', help='upload statement.xml')
+    parser_upload_ssh.add_argument('-g', '--gvaluer', action='store_true', help='upload valuer.cfg')
+    parser_upload_ssh.set_defaults(func=upload_ssh)
 
     # (clean) clean tmp files
     parser_clean = subparsers.add_parser('clean', help='clean')
