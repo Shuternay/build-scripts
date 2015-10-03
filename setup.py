@@ -2,10 +2,10 @@
 from setuptools import setup
 
 setup(
-    name='build-scripts',
+    name='olymper',
     version='1.0.5',
-    packages=['build_scripts'],
-    package_data={'build_scripts': ['data/bootstrap/*', 'data/*.cpp', 'data/*.h']},
+    packages=['olymper'],
+    package_data={'olymper': ['data/bootstrap/*', 'data/*.cpp', 'data/*.h']},
     url='https://github.com/Shuternay/build-scripts',
     license='',
     author='shuternay',
@@ -13,8 +13,8 @@ setup(
     description='',
     entry_points={
         'console_scripts': [
-            'problem-control = build_scripts.problem_control:main',
-            'process-runlog = build_scripts.process_run_log:main',
+            'olymper = olymper.problem_control:main',
+            'process-runlog = olymper.process_run_log:main',
         ],
     },
     install_requires=[

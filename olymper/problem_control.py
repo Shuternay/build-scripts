@@ -5,21 +5,21 @@ import ftplib
 import netrc
 import pkgutil
 import subprocess
-
-from paramiko import SSHClient
-import paramiko
-from scp import SCPClient
 import os
 import random
 import shutil
 import stat
 
-from build_scripts import tex2xml
-from build_scripts import misc
-from build_scripts.misc import write_log
-from build_scripts.misc import bcolors
-from build_scripts.executable import Executable
-import build_scripts.polygon
+from paramiko import SSHClient
+import paramiko
+from scp import SCPClient
+
+from olymper import tex2xml
+from olymper import misc
+from olymper.misc import write_log
+from olymper.misc import bcolors
+from olymper.executable import Executable
+import olymper.polygon
 
 pjoin = os.path.join
 
@@ -595,7 +595,7 @@ def add(args):
 
     for src, dst, ext in files:
         with open(os.path.join(problem_path, dst), 'w') as f:
-            data = str(pkgutil.get_data('build_scripts', os.path.join('data', 'bootstrap', src)), 'utf-8')
+            data = str(pkgutil.get_data('olymper', os.path.join('data', 'bootstrap', src)), 'utf-8')
             if ext:
                 data = data.replace('{0}', problem_name)
             f.write(data)
@@ -613,7 +613,7 @@ def import_polygon_problem(args):
 
     os.mkdir(problem_path)
 
-    build_scripts.polygon.import_problem(args['path'], problem_path)
+    olymper.polygon.import_problem(args['path'], problem_path)
 
 
 def add_contest(args):
@@ -639,11 +639,11 @@ def add_contest(args):
 
     for src, dst in files:
         with open(os.path.join(name, dst), 'w') as f:
-            data = str(pkgutil.get_data('build_scripts', os.path.join('data', 'bootstrap', src)), 'utf-8')
+            data = str(pkgutil.get_data('olymper', os.path.join('data', 'bootstrap', src)), 'utf-8')
             f.write(data)
 
     with open(pjoin(name, 'lib', 'testlib.h'), 'w') as f:
-        data = str(pkgutil.get_data('build_scripts', pjoin('data', 'testlib.h')), 'utf-8')
+        data = str(pkgutil.get_data('olymper', pjoin('data', 'testlib.h')), 'utf-8')
         f.write(data)
 
         for file in ('r.sh', 'r.cmd', 'clean.sh'):

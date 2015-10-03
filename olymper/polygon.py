@@ -82,7 +82,7 @@ def import_statement(src, dest, polygon_conf_root, short_name):
                 shutil.copy2(os.path.join(src, statement.attrib['path']),
                              os.path.join(dest, 'statements', short_name + '.tex'))
     if not os.path.exists(os.path.join(dest, 'statements', short_name + '.tex')):
-        statement = str(pkgutil.get_data('build_scripts', os.path.join('data', 'bootstrap', 'st.tex')), 'utf-8')
+        statement = str(pkgutil.get_data('olymper', os.path.join('data', 'bootstrap', 'st.tex')), 'utf-8')
         with open(os.path.join(dest, 'statements', short_name + '.tex'), 'w') as f:
             f.write(statement)
 
@@ -104,7 +104,7 @@ def import_validator(src, dest, polygon_conf_root, conf):
                      os.path.join(dest, os.path.basename(validator)))
         conf['validator'] = os.path.basename(validator)
     else:
-        statement = str(pkgutil.get_data('build_scripts', os.path.join('data', 'bootstrap', 'validator.cpp')), 'utf-8')
+        statement = str(pkgutil.get_data('olymper', os.path.join('data', 'bootstrap', 'validator.cpp')), 'utf-8')
         with open(os.path.join(dest, 'validator.cpp'), 'w') as f:
             f.write(statement)
         conf['validator'] = os.path.basename('validator.cpp')
@@ -120,7 +120,7 @@ def import_checker(src, dest, polygon_conf_root, conf):
                      os.path.join(dest, os.path.basename(checker_ex)))
         conf['checker'] = os.path.basename(checker)
     else:
-        statement = str(pkgutil.get_data('build_scripts', os.path.join('data', 'bootstrap', 'checker.cpp')), 'utf-8')
+        statement = str(pkgutil.get_data('olymper', os.path.join('data', 'bootstrap', 'checker.cpp')), 'utf-8')
         with open(os.path.join(dest, 'checker.cpp'), 'w') as f:
             f.write(statement)
         conf['checker'] = os.path.basename('checker.cpp')

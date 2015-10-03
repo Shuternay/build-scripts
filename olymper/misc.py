@@ -1,9 +1,9 @@
 # !/usr/bin/python3
 import configparser
 import json
+import os
 
 import jsoncomment
-import os
 
 __author__ = 'ksg'
 

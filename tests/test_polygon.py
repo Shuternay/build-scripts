@@ -2,11 +2,10 @@ import json
 import pkgutil
 from unittest import TestCase
 from xml.etree import ElementTree
-
 import os
 import tempfile
 
-from build_scripts import polygon
+from olymper import polygon
 
 __author__ = 'ksg'
 

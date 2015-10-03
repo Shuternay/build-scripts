@@ -3,12 +3,10 @@ import subprocess
 from unittest import TestCase
 import sys
 import unittest
-
 import os
 import tempfile
 
-from build_scripts.executable import Executable
-
+from olymper.executable import Executable
 
 __author__ = 'ksg'
 

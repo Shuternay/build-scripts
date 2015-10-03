@@ -1,12 +1,11 @@
 import subprocess
 import time
-
 import collections
 import hashlib
 import os
 
-from build_scripts.misc import pjoin
-from build_scripts.misc import bcolors
+from olymper.misc import pjoin
+from olymper.misc import bcolors
 
 __author__ = 'ksg'
 
